@@ -8,7 +8,7 @@
 //   node src/scripts/loadStaticData.js --fire ./data/fire_stations.csv
 //   node src/scripts/loadStaticData.js --all  (loads all from ./data/ directory)
 
-import "dotenv/config";
+import "../config/env.js";
 
 import { readFileSync } from "node:fs";
 import { parse } from "csv-parse/sync";
@@ -17,8 +17,6 @@ import mongoose from "mongoose";
 import HazardPoint from "../models/HazardPoint.js";
 import ScenarioPoint from "../models/ScenarioPoint.js";
 import FireStation from "../models/FireStation.js";
-
-dotenv.config();
 
 const BATCH_SIZE = 500; // insertMany batch size to avoid memory spikes on M0
 

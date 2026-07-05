@@ -28,19 +28,25 @@ export const helmetMiddleware = helmet({
  */
 export function createCorsMiddleware() {
   const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:5173";
+  const isProduction = process.env.NODE_ENV === "production";
 
   // Support multiple origins if comma-separated
   const origins = allowedOrigin.split(",").map((o) => o.trim()).filter(Boolean);
+  const devOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/;
 
   return cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (server-to-server, curl, etc.)
       // Only in development — in production, reject them.
-      if (!origin && process.env.NODE_ENV !== "production") {
+      if (!origin && !isProduction) {
         return callback(null, true);
       }
 
       if (origins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      if (!isProduction && devOriginPattern.test(origin)) {
         return callback(null, true);
       }
 

@@ -2,9 +2,8 @@
 // Main server entry point. No ML libraries here — stays light so
 // cold starts are fast and 512MB RAM is never a problem.
 
-// dotenv/config runs as a side effect during import — must be FIRST
-// so env vars are available when other modules (Redis, etc.) initialize.
-import "dotenv/config";
+// Load Backend/.env before modules that read process.env at import time.
+import "./config/env.js";
 
 import express from "express";
 import mongoose from "mongoose";

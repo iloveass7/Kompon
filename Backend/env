@@ -1,0 +1,23 @@
+# ─── Kompon Backend — Environment Variables ───
+# Copy this file to .env and fill in your values.
+
+# Server
+PORT=3001
+NODE_ENV=development
+
+# MongoDB Atlas M0
+MONGODB_URI=mongodb://borshonjsr:Abir24865123@ac-n1sjsbn-shard-00-00.hg23ccm.mongodb.net:27017,ac-n1sjsbn-shard-00-01.hg23ccm.mongodb.net:27017,ac-n1sjsbn-shard-00-02.hg23ccm.mongodb.net:27017/?ssl=true&replicaSet=atlas-12xnqp-shard-0&authSource=admin&appName=Cluster0
+
+# Upstash Redis (REST-based)
+UPSTASH_REDIS_REST_URL=https://cuddly-sunbeam-115214.upstash.io
+UPSTASH_REDIS_REST_TOKEN=gQAAAAAAAcIOAAIgcDJhMDlhYWVkN2QyZTk0YjcyYmU0YzFhNDBkY2YyNzM1MA
+
+# Hugging Face ML Space (production Hugging Face space URL)
+ML_SPACE_BASE_URL=https://iloveass-kompon-ml.hf.space
+
+# News APIs
+CURRENTS_API_KEY=YO29SfSXRtWh5thwkEXz37768UcHOSTv-n4LtwIrP-5NGGtG
+NEWSDATA_API_KEY=<optional-backup-newsdata-key>
+
+# CORS — lock to your actual frontend origin
+ALLOWED_ORIGIN=https://<your-frontend-domain>

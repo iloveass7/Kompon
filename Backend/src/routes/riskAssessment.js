@@ -96,6 +96,10 @@ router.post(
       const lat = req.body.lat !== undefined ? parseFloat(req.body.lat) : null;
       const lon = req.body.lon !== undefined ? parseFloat(req.body.lon) : null;
       const scenarioEventId = req.body.scenario_event_id || null;
+      const bypassGate =
+        req.body.bypass_gate === true ||
+        req.body.bypass_gate === "true" ||
+        req.body.bypass_gate === "1";
 
       // Validate lat/lon if provided
       if (lat !== null && (isNaN(lat) || lat < -90 || lat > 90)) {
@@ -158,7 +162,7 @@ router.post(
       const { gate, crack_analysis: crackAnalysis } = mlResult;
 
       // If gate rejected the image, return early with the reason
-      if (gate && gate.decision !== "accept") {
+      if (gate && gate.decision !== "accept" && !bypassGate) {
         return res.status(200).json({
           gate,
           rejected: true,
