@@ -20,6 +20,10 @@ import newsRouter from "./routes/news.js";
 import safePlacesRouter from "./routes/safePlaces.js";
 import fireBrigadeRouter from "./routes/fireBrigade.js";
 import hazardRouter from "./routes/hazard.js";
+import chatRouter from "./routes/chat.js";
+
+import { fetchServingData } from "./scripts/fetchServingData.js";
+import { initDuckDB } from "./services/duckdbClient.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -56,6 +60,7 @@ app.use("/v1/news", newsRouter);
 app.use("/v1/safe-places", safePlacesRouter);
 app.use("/v1/fire-brigade", fireBrigadeRouter);
 app.use("/v1/hazard", hazardRouter);
+app.use("/v1/chat", chatRouter);
 
 // ─── 404 handler ───
 app.use((_req, res) => {
@@ -103,6 +108,14 @@ async function start() {
     console.error("[DB] MongoDB connection failed:", err.message);
     console.warn("[DB] Server will start without MongoDB. Endpoints needing geospatial data (hazard, risk-assessment location) will return errors.");
     console.warn("[DB] Fix: Ensure your IP is whitelisted in MongoDB Atlas → Network Access → Add Current IP Address.");
+  }
+
+  // 1.5 Download Parquet data and init DuckDB
+  try {
+    await fetchServingData();
+    await initDuckDB();
+  } catch (err) {
+    console.error("[DuckDB] Initialization failed:", err.message);
   }
 
   // 2. Initial news cache population
