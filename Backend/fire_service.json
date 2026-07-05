@@ -1,0 +1,591 @@
+{
+  "last_updated": "2026-07-05",
+  "data_source": "Compiled from Bangladesh Fire Service & Civil Defence official websites, jessoreinfo.com, cybo.com, and other publicly available directories.",
+  "disclaimer": "This data is compiled from public sources for informational purposes. Please verify all contact numbers from official sources before use. In case of emergency, always dial the national hotline 102 or 999.",
+  "national_hotlines": {
+    "fire_service": "102",
+    "national_emergency": "999",
+    "alternative": "02223355555",
+    "monitoring_cell": "01713038181"
+  },
+  "stations": [
+    {
+      "division": "Dhaka",
+      "district": "Dhaka",
+      "upazila": "Dhaka Sadar",
+      "station_name": "Bangladesh Fire Service and Civil Defense Head Quarter",
+      "phone_numbers": ["+8801730336699", "+88029555555", "+8801711111111"],
+      "address": "38-46 Kazi Alauddin Road, Fulbaria Rd, Dhaka 1000",
+      "source_url": "https://www.fireservice.gov.bd"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Dhaka",
+      "upazila": "Dhaka Sadar",
+      "station_name": "Fire Service and Civil Defence Directorate",
+      "phone_numbers": ["+8801711111111"],
+      "address": "38, 46 Kazi Alauddin Rd, Dhaka 1000",
+      "source_url": "https://www.fireservice.gov.bd"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Dhaka",
+      "upazila": "Mirpur",
+      "station_name": "Fire Service And Civil Defence Station Mirpur",
+      "phone_numbers": ["+88029001055", "01556300117"],
+      "address": "Mirpur Rd, Dhaka 1216",
+      "source_url": "https://www.fireservice.gov.bd"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Dhaka",
+      "upazila": "Tejgaon",
+      "station_name": "Fire Service and Civil Defense, Tejgaon Fire Station",
+      "phone_numbers": ["+8801730002226"],
+      "address": "Shaheed Tajuddin Ahmed Ave, Dhaka 1208",
+      "source_url": "https://www.fireservice.gov.bd"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Dhaka",
+      "upazila": "Demra",
+      "station_name": "Demra Fire Station",
+      "phone_numbers": ["+8801730002302"],
+      "address": "Demra-Narayanganj Rd, Sarulia, Near Rani Mahal Cinema Hall, Dhaka 1361",
+      "source_url": "https://www.fireservice.gov.bd"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Dhaka",
+      "upazila": "Mirpur",
+      "station_name": "Fire Service & Civil Defense Grenning Compred, Mirpur",
+      "phone_numbers": [],
+      "address": "Mirpur, Dhaka",
+      "source_url": "https://www.fireservice.gov.bd"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Dhaka",
+      "upazila": "Siddik Bazar",
+      "station_name": "Siddik Bazar Fire Station",
+      "phone_numbers": ["9555555 Ext-245", "01711283129"],
+      "source_url": "https://goldenbusinessbd.com"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Dhaka",
+      "upazila": "Postogola",
+      "station_name": "Postogola Fire Station",
+      "phone_numbers": ["7410771", "01712897982"],
+      "source_url": "https://goldenbusinessbd.com"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Dhaka",
+      "upazila": "Mohammadpur",
+      "station_name": "Mohammadpur Fire Station",
+      "phone_numbers": ["9112078", "01712970093"],
+      "source_url": "https://goldenbusinessbd.com"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Dhaka",
+      "upazila": "Sadarghat",
+      "station_name": "Sadarghat Fire Station",
+      "phone_numbers": ["7119759", "01715147907"],
+      "source_url": "https://goldenbusinessbd.com"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Kishoreganj",
+      "upazila": "Kishoreganj Sadar",
+      "station_name": "Kishoreganj Fire Station",
+      "phone_numbers": ["09429-56222", "01730082217"],
+      "source_url": "https://m.somewhereinblog.net"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Manikganj",
+      "upazila": "Manikganj Sadar",
+      "station_name": "Manikganj Fire Service & Civil Defence Station",
+      "phone_numbers": ["02998814111", "01901020946"],
+      "source_url": "http://fireservice.manikganj.gov.bd"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Manikganj",
+      "upazila": "Ghior",
+      "station_name": "Ghior Fire Service & Civil Defence Station",
+      "phone_numbers": ["01901020946"],
+      "source_url": "http://fireservice.manikganj.gov.bd"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Narsingdi",
+      "upazila": "Narsingdi Sadar",
+      "station_name": "Fire Service & Civil Defense Station",
+      "phone_numbers": ["+8801730002156"],
+      "address": "Raipur Highway, Narsingdi 1600",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Tangail",
+      "upazila": "Madhupur",
+      "station_name": "Madhupur Fire Service",
+      "phone_numbers": ["+8801729931191"],
+      "address": "Joydevpur - Tangail - Jamalpur Hwy, 1996",
+      "source_url": "http://fireservice.madhupur.tangail.gov.bd"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Faridpur",
+      "upazila": "Faridpur Sadar",
+      "station_name": "Fire Service & Civil Defence",
+      "phone_numbers": ["+88063163433"],
+      "address": "Mujib Sharak, Faridpur 7800",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Dhaka",
+      "district": "Madaripur",
+      "upazila": "Madaripur Sadar",
+      "station_name": "Jhalokati Fire Station",
+      "phone_numbers": ["+88045162333"],
+      "address": "Jhalakathi 8400",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Chittagong",
+      "district": "Chittagong",
+      "upazila": "Fatikchhari",
+      "station_name": "Fatikchhari Fire Service & Civil Defence Station",
+      "phone_numbers": ["+8801772241510"],
+      "address": "Chittagong - Khagrachhari Rd, chittagong",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Chittagong",
+      "district": "Chittagong",
+      "upazila": "Nandankanon",
+      "station_name": "Fire Service and Civil Defence Station Nandankanon",
+      "phone_numbers": ["+8801730002412"],
+      "address": "Chattogram 4000",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Chittagong",
+      "district": "Chittagong",
+      "upazila": "CEPZ",
+      "station_name": "CEPZ Fire Station",
+      "phone_numbers": ["+8801958237575"],
+      "address": "CEPZ Entry Rd, Chattogram 4223",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Chittagong",
+      "district": "Chittagong",
+      "upazila": "Karnaphuli EPZ",
+      "station_name": "Karnaphuli EPZ Fire Station",
+      "phone_numbers": ["+8801968889966"],
+      "address": "Karnaphuli EPZ Fire Service & Civil Defense Station, Chattogram 4204",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Chittagong",
+      "district": "Chittagong",
+      "upazila": "Chittagong Sadar",
+      "station_name": "Fire Service and Civil Defence",
+      "phone_numbers": ["+8801719678720"],
+      "address": "Chattogram",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Barisal",
+      "district": "Barisal",
+      "upazila": "Barisal Sadar",
+      "station_name": "Fire Service & Civil Defence Station, Barishal Sadar",
+      "phone_numbers": ["0431-65222", "024788-65149", "+88043165222", "01901023921"],
+      "address": "Fazlul Haque Ave, Barishal 8200",
+      "source_url": "http://fireservice.barisaldiv.gov.bd"
+    },
+    {
+      "division": "Barisal",
+      "district": "Barisal",
+      "upazila": "Barisal Sadar",
+      "station_name": "Barishal River Fire Station",
+      "phone_numbers": ["01901023921"],
+      "source_url": "http://fireservice.barisaldiv.gov.bd"
+    },
+    {
+      "division": "Barisal",
+      "district": "Barisal",
+      "upazila": "Barisal Division",
+      "station_name": "Barisal Divisional Control Room",
+      "phone_numbers": ["01878001111"],
+      "source_url": "https://www.bssnews.net"
+    },
+    {
+      "division": "Barisal",
+      "district": "Jhalokathi",
+      "upazila": "Jhalokathi Sadar",
+      "station_name": "Fire Service & Civil Defence, Jhalokathi",
+      "phone_numbers": ["01714340206"],
+      "address": "Division - Barisal, District - Jhalokathi, Upazila - Jhalokathi Sadar",
+      "source_url": "http://fireservice.barisaldiv.gov.bd"
+    },
+    {
+      "division": "Rajshahi",
+      "district": "Rajshahi",
+      "upazila": "Rajshahi Sadar",
+      "station_name": "Rajshahi Fire Station",
+      "phone_numbers": ["01730336655", "01901022227", "+8801730336655"],
+      "address": "Saheb Bazar Rd, Rajshahi",
+      "source_url": "http://fireservice.rajshahi.gov.bd"
+    },
+    {
+      "division": "Rajshahi",
+      "district": "Rajshahi",
+      "upazila": "Rajshahi Sadar",
+      "station_name": "Rajshahi Uttar Fire Station",
+      "phone_numbers": ["01901022231"],
+      "source_url": "http://fireservice.rajshahi.gov.bd"
+    },
+    {
+      "division": "Rajshahi",
+      "district": "Rajshahi",
+      "upazila": "Rajshahi University",
+      "station_name": "Rajshahi University Fire Station",
+      "phone_numbers": ["01901022231"],
+      "source_url": "http://fireservice.rajshahi.gov.bd"
+    },
+    {
+      "division": "Rajshahi",
+      "district": "Rajshahi",
+      "upazila": "Bagha",
+      "station_name": "Fire Service And Civil Defense Station, Bagha",
+      "phone_numbers": ["+8801308443334"],
+      "address": "Puthia - Bagha Rd",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Rajshahi",
+      "district": "Naogaon",
+      "upazila": "Naogaon Sadar",
+      "station_name": "Naogaon Fire Service & Civil Defence Station",
+      "phone_numbers": ["+88074162000", "01901022268"],
+      "address": "R545, Naogaon",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Rajshahi",
+      "district": "Naogaon",
+      "upazila": "Manda",
+      "station_name": "Manda Fire Service and Civil Defense Station",
+      "phone_numbers": ["01901-022268"],
+      "address": "Proshadpur 6511",
+      "source_url": "http://www.manda.naogaon.gov.bd"
+    },
+    {
+      "division": "Rajshahi",
+      "district": "Pabna",
+      "upazila": "Kashinathpur",
+      "station_name": "Fire Service & Civil Defense Station, Kashinathpur",
+      "phone_numbers": ["01750-539898"],
+      "address": "Dhaka - Pabna Hwy, Kashinathpur",
+      "source_url": "https://www.fireservice.gov.bd"
+    },
+    {
+      "division": "Rajshahi",
+      "district": "Pabna",
+      "upazila": "Bonpara",
+      "station_name": "Bonpara Kalikapur Fire Station",
+      "phone_numbers": ["+8801700663677"],
+      "address": "Rajshahi - Pabna Hwy",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Rajshahi",
+      "district": "Bogra",
+      "upazila": "Bogra Sadar",
+      "station_name": "Fire Service & Civil Defense Station, Bogura",
+      "phone_numbers": ["+8801730002497"],
+      "address": "Sherpur Rd, Bogura 5800",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Rajshahi",
+      "district": "Sirajganj",
+      "upazila": "Belkuchi",
+      "station_name": "Bangladesh Fire Service and Civil Defence, Belkuchi",
+      "phone_numbers": [],
+      "address": "Belkuchi, Sirajganj District, Rajshahi Division",
+      "source_url": "https://mapcarta.com"
+    },
+    {
+      "division": "Rajshahi",
+      "district": "Sherpur",
+      "upazila": "Sherpur Sadar",
+      "station_name": "Bangladesh Fire Service and Civil Defense, Sherpur",
+      "phone_numbers": ["+8801730002332"],
+      "address": "Dhaka - Rangpur Hwy, Sherpur",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Rangpur",
+      "district": "Rangpur",
+      "upazila": "Rangpur Sadar",
+      "station_name": "Rangpur Fire Station",
+      "phone_numbers": ["01901023230", "01714558464", "01741462931", "01740083296", "01738150108", "01718461877", "01926733601"],
+      "source_url": "https://fireservice.gov.bd"
+    },
+    {
+      "division": "Rangpur",
+      "district": "Dinajpur",
+      "upazila": "Dinajpur Sadar",
+      "station_name": "Fire Service and Civil Defence Dinajpur",
+      "phone_numbers": ["+8801730009120"],
+      "address": "Station Rd, Dinajpur 5200",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Rangpur",
+      "district": "Kurigram",
+      "upazila": "Kurigram Sadar",
+      "station_name": "Fire Service and Civil Defense, Kurigram",
+      "phone_numbers": ["01901023205"],
+      "source_url": "http://kurigram.gov.bd"
+    },
+    {
+      "division": "Rangpur",
+      "district": "Rangpur",
+      "upazila": "Birganj",
+      "station_name": "Fire Service & Civil Defence Station, Birganj",
+      "phone_numbers": [],
+      "address": "Birganj - Kaharol Rd",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Rangpur",
+      "district": "Panchagarh",
+      "upazila": "Tentulia",
+      "station_name": "Tentulia Fire Station and Civil Defense",
+      "phone_numbers": [],
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Rangpur",
+      "district": "Thakurgaon",
+      "upazila": "Atwari",
+      "station_name": "Atwari Fire Service",
+      "phone_numbers": [],
+      "address": "Rangpur Division",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Khulna",
+      "district": "Jashore",
+      "upazila": "Jashore Sadar",
+      "station_name": "Fire Service Directorate of Jessore",
+      "phone_numbers": ["+88-01730-009170"],
+      "address": "Nil Ratan Dhar Road, Jessore Sadar Upazila",
+      "source_url": "https://jessoreinfo.com"
+    },
+    {
+      "division": "Khulna",
+      "district": "Jashore",
+      "upazila": "Jashore Sadar",
+      "station_name": "Jessore Sadar Fire Station (Head Office)",
+      "phone_numbers": ["+88-01730-009170"],
+      "address": "Nil Ratan Dhar Road, Jessore Sadar Upazila",
+      "source_url": "https://jessoreinfo.com"
+    },
+    {
+      "division": "Khulna",
+      "district": "Jashore",
+      "upazila": "Naoyapara",
+      "station_name": "Naoyapara Fire Station",
+      "phone_numbers": ["02477770013"],
+      "source_url": "https://jessoreinfo.com"
+    },
+    {
+      "division": "Khulna",
+      "district": "Jashore",
+      "upazila": "Jhikargacha",
+      "station_name": "Jhikargacha Fire Station",
+      "phone_numbers": ["+88-01302-000591"],
+      "source_url": "https://jessoreinfo.com"
+    },
+    {
+      "division": "Khulna",
+      "district": "Jashore",
+      "upazila": "Benapole",
+      "station_name": "Benapole Fire Station",
+      "phone_numbers": ["+88-01730-009171"],
+      "source_url": "https://jessoreinfo.com"
+    },
+    {
+      "division": "Khulna",
+      "district": "Jashore",
+      "upazila": "Manirampur",
+      "station_name": "Manirampur Fire Station",
+      "phone_numbers": [],
+      "source_url": "https://jessoreinfo.com"
+    },
+    {
+      "division": "Khulna",
+      "district": "Jashore",
+      "upazila": "Keshabpur",
+      "station_name": "Keshabpur Fire Station",
+      "phone_numbers": [],
+      "source_url": "https://jessoreinfo.com"
+    },
+    {
+      "division": "Khulna",
+      "district": "Khulna",
+      "upazila": "Khulna Sadar",
+      "station_name": "Khulna Fire Station",
+      "phone_numbers": ["024777-00482"],
+      "source_url": "http://fireservice.khulna.gov.bd"
+    },
+    {
+      "division": "Khulna",
+      "district": "Khulna",
+      "upazila": "Khulna Division",
+      "station_name": "Khulna Divisional Control Room",
+      "phone_numbers": ["01733062209"],
+      "source_url": "https://www.bssnews.net"
+    },
+    {
+      "division": "Khulna",
+      "district": "Khulna",
+      "upazila": "Phultala",
+      "station_name": "Fire Service & Civil Defence Station, Khanjahan Ali",
+      "phone_numbers": [],
+      "address": "Afil gate, Atra, Khulna City Bypass, Phultala-9207, Khulna",
+      "source_url": "https://www.mawbiz.com.bd"
+    },
+    {
+      "division": "Khulna",
+      "district": "Chuadanga",
+      "upazila": "Chuadanga Sadar",
+      "station_name": "Fire Service & Civil Defence Station, Chuadanga",
+      "phone_numbers": ["01901022898", "01745400699", "02477788222"],
+      "source_url": "http://fireservice.chuadanga.gov.bd"
+    },
+    {
+      "division": "Khulna",
+      "district": "Satkhira",
+      "upazila": "Satkhira Sadar",
+      "station_name": "Satkhira Fire Station",
+      "phone_numbers": [],
+      "source_url": "http://fireservice.satkhira.gov.bd"
+    },
+    {
+      "division": "Sylhet",
+      "district": "Sylhet",
+      "upazila": "Sylhet Sadar",
+      "station_name": "Senior Station Officer (Sylhet)",
+      "phone_numbers": ["01901-023615", "02996634998"],
+      "email": "sylsadar.syl@fireservice.gov.bd",
+      "source_url": "http://nabiganjsadarup.habiganj.gov.bd"
+    },
+    {
+      "division": "Sylhet",
+      "district": "Habiganj",
+      "upazila": "Nabiganj",
+      "station_name": "Assistant Director, Sylhet",
+      "phone_numbers": ["01715178918"],
+      "source_url": "http://nabiganjsadarup.habiganj.gov.bd"
+    },
+    {
+      "division": "Sylhet",
+      "district": "Habiganj",
+      "upazila": "Nabiganj",
+      "station_name": "Deputy Assistant Director, Sylhet",
+      "phone_numbers": ["01901020152"],
+      "source_url": "http://nabiganjsadarup.habiganj.gov.bd"
+    },
+    {
+      "division": "Mymensingh",
+      "district": "Jamalpur",
+      "upazila": "Jamalpur Sadar",
+      "station_name": "Jamalpur Fire Service & Civil Defense Station",
+      "phone_numbers": ["+8801730002399"],
+      "address": "Station Rd, Jamalpur 2000",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Mymensingh",
+      "district": "Jamalpur",
+      "upazila": "Madarganj",
+      "station_name": "Madargonj Fire Service And civil defence Station",
+      "phone_numbers": ["+8801772291313"],
+      "address": "Madarganj - Jamalpur Rd, Madarganj 2041",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Mymensingh",
+      "district": "Jamalpur",
+      "upazila": "Phulpur",
+      "station_name": "Phulpur Fire Service",
+      "phone_numbers": ["+8801798593555"],
+      "address": "Haluaghat - Phulpur Rd",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Mymensingh",
+      "district": "Jamalpur",
+      "upazila": "Jhenaigati",
+      "station_name": "Jhinaigati Fire Service & Civil Defence",
+      "phone_numbers": ["+8801743299898"],
+      "address": "Jhenaigati",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Mymensingh",
+      "district": "Sherpur",
+      "upazila": "Sherpur Sadar",
+      "station_name": "Bangladesh Fire Service and Civil Defense (Sherpur)",
+      "phone_numbers": ["+8801730002332"],
+      "address": "Dhaka - Rangpur Hwy, Sherpur",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Mymensingh",
+      "district": "Bogra",
+      "upazila": "Gabtali",
+      "station_name": "Gabtali Fire Station",
+      "phone_numbers": ["01901022395"],
+      "address": "Gabtali - Shariakandi Rd",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Mymensingh",
+      "district": "Bogra",
+      "upazila": "Dhunat",
+      "station_name": "Dhunat Fire Station",
+      "phone_numbers": ["+8801758807817"],
+      "address": "Sherpur - Dhunat Rd, Dhunat Pouroshobha",
+      "source_url": "https://www.cybo.com"
+    },
+    {
+      "division": "Mymensingh",
+      "district": "Netrokona",
+      "upazila": "Ishwarganj",
+      "station_name": "Ishwarganj Fire Service and Civil Defence",
+      "phone_numbers": ["01720-020041"],
+      "address": "MHVR+CMV, Ishwarganj",
+      "source_url": "https://www.fireservice.gov.bd"
+    },
+    {
+      "division": "Mymensingh",
+      "district": "Narayanganj",
+      "upazila": "Sonargaon",
+      "station_name": "Sonargaon Fire service and Civil Defence Station",
+      "phone_numbers": ["+8801304066155"],
+      "address": "Sonargaon",
+      "source_url": "https://www.cybo.com"
+    }
+  ]
+}
