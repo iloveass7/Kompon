@@ -1,17 +1,29 @@
-import { DuckDBInstance } from '@duckdb/node-api';
 import path from 'path';
 import { DATA_DIR } from '../scripts/fetchServingData.js';
 import fs from 'fs';
 
 let connection;
+let duckdbAvailable = true;
 
 export async function initDuckDB() {
+  let DuckDBInstance;
+  try {
+    ({ DuckDBInstance } = await import('@duckdb/node-api'));
+  } catch (err) {
+    duckdbAvailable = false;
+    console.warn(
+      `[DuckDB] @duckdb/node-api is not installed or could not be loaded. Parquet hazard lookups are disabled. (${err.code || err.message})`
+    );
+    return;
+  }
+
   const instance = await DuckDBInstance.create(':memory:');
   connection = await instance.connect();
   console.log("[DuckDB] In-memory database initialized.");
 }
 
 export async function getNearestHazardPoint(lat, lon) {
+  if (!duckdbAvailable) return null;
   if (!connection) throw new Error("DuckDB not initialized");
   
   const hazardFile = path.join(DATA_DIR, 'hazard_grid.parquet');
@@ -59,6 +71,7 @@ export async function getNearestHazardPoint(lat, lon) {
 }
 
 export async function getNearestScenarioPoint(eventId, lat, lon) {
+  if (!duckdbAvailable) return null;
   if (!connection) throw new Error("DuckDB not initialized");
   
   const scenarioFile = path.join(DATA_DIR, `scenario_${eventId}.parquet`);

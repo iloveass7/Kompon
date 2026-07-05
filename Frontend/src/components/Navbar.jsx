@@ -38,6 +38,11 @@ function Navbar() {
     scrollToSectionStart(target)
   }
 
+  const callEmergency = () => {
+    setIsOpen(false)
+    window.location.href = 'tel:999'
+  }
+
   // On the dark hero, text is light; once solid, revert to the dark-on-light scheme.
   const overHero = !solid && !isOpen
   const navTextClass = overHero ? 'text-white' : 'text-[#121212]'
@@ -114,14 +119,16 @@ function Navbar() {
               : 'border-[#222] bg-[#fafafa] text-[#121212] hover:bg-[#f4f4f4]'
           }`}
           type="button"
+          onClick={(event) => scrollToSection(event, 'map')}
         >
-          Button
+          Map
         </button>
         <button
           className={`inline-flex min-h-10 w-full items-center justify-center border border-[#ff5330] bg-[#ff5330] px-5 text-white transition-transform duration-300 ease-out hover:-translate-y-0.5 md:w-auto ${type.navButton}`}
           type="button"
+          onClick={callEmergency}
         >
-          Button
+          Call 999
         </button>
       </motion.nav>
     </header>

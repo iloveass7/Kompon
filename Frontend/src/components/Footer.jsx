@@ -1,19 +1,24 @@
 import { motion } from 'framer-motion'
-import { AtSign, Link, MessageCircle, Share2, Video } from 'lucide-react'
+import { AtSign, Link, Map, MessageCircle, Phone, Share2, ShieldCheck, Video } from 'lucide-react'
 import { buttonHover, buttonTap, sectionGroup, sectionItem, sectionViewport } from '../lib/motion.js'
 import { type } from '../lib/typography.js'
 
 const footerLinks = [
-  'Link One',
-  'Link Two',
-  'Link Three',
-  'Link Four',
-  'Link Five',
+  { label: 'Home', target: 'home' },
+  { label: 'Risk map', target: 'map' },
+  { label: 'Alerts', target: 'alerts' },
+  { label: 'Inspect', target: 'inspect' },
+  { label: 'Relief', target: 'relief' },
 ]
 
 const socials = [Share2, MessageCircle, AtSign, Link, Video]
-const legalIcons = [Share2, MessageCircle, AtSign, Video]
+const legalIcons = [ShieldCheck, Map, Phone, MessageCircle]
 const buttonBase = `inline-flex min-h-11 items-center justify-center border px-5 ${type.button}`
+
+function scrollToTarget(event, target) {
+  event.preventDefault()
+  document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 function Footer() {
   return (
@@ -29,18 +34,18 @@ function Footer() {
           variants={sectionItem}
         >
           <h2 className={type.sectionTitle}>
-            Medium length footer heading goes here
+            Stay prepared before the next tremor
           </h2>
           <p className={`my-[22px] text-[#c8c8c8] md:mb-7 ${type.body}`}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse
-            varius enim in eros elementum tristique.
+            Use Kompon to check current alerts, screen visible building damage,
+            find nearby open areas, and reach emergency services when it matters.
           </p>
           <div className="flex gap-3.5">
-            <motion.button className={`${buttonBase} border-[#ff5330] bg-[#ff5330] text-white`} type="button" whileHover={buttonHover} whileTap={buttonTap}>
-              Button
+            <motion.button className={`${buttonBase} border-[#ff5330] bg-[#ff5330] text-white`} type="button" onClick={(event) => scrollToTarget(event, 'inspect')} whileHover={buttonHover} whileTap={buttonTap}>
+              Start inspection
             </motion.button>
-            <motion.button className={`${buttonBase} border-white bg-transparent text-white`} type="button" whileHover={buttonHover} whileTap={buttonTap}>
-              Button
+            <motion.button className={`${buttonBase} border-white bg-transparent text-white`} type="button" onClick={() => { window.location.href = 'tel:999' }} whileHover={buttonHover} whileTap={buttonTap}>
+              Call 999
             </motion.button>
           </div>
         </motion.div>
@@ -48,15 +53,15 @@ function Footer() {
         <motion.div className={`grid gap-8 sm:grid-cols-2 md:gap-14 ${type.footerLink}`} aria-label="Footer links" variants={sectionItem}>
           <ul className="grid gap-[18px] p-0">
             {footerLinks.map((link) => (
-              <li className="list-none" key={`left-${link}`}>
-                <a className="transition-colors hover:text-[#ff5330]" href="#home">{link}</a>
+              <li className="list-none" key={`left-${link.target}`}>
+                <a className="transition-colors hover:text-[#ff5330]" href={`#${link.target}`} onClick={(event) => scrollToTarget(event, link.target)}>{link.label}</a>
               </li>
             ))}
           </ul>
           <ul className="grid gap-[18px] p-0">
             {footerLinks.map((link) => (
-              <li className="list-none" key={`right-${link}`}>
-                <a className="transition-colors hover:text-[#ff5330]" href="#home">{link}</a>
+              <li className="list-none" key={`right-${link.target}`}>
+                <a className="transition-colors hover:text-[#ff5330]" href={`#${link.target}`} onClick={(event) => scrollToTarget(event, link.target)}>{link.label}</a>
               </li>
             ))}
           </ul>

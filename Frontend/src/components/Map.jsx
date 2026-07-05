@@ -10,7 +10,7 @@ function Map() {
   const alignedTextColumn = 'w-full max-w-[560px] sm:mx-auto lg:mx-0'
 
   return (
-    <section className="relative -mt-px overflow-hidden bg-[#fafafa]">
+    <section id="map" className="relative -mt-px scroll-mt-[100px] overflow-hidden bg-[#fafafa]">
       <motion.div
         className={`mx-auto flex w-full max-w-[1440px] flex-col items-center px-5 pb-16 pt-6 sm:px-8 md:px-10 md:pb-20 lg:flex-row lg:px-16 lg:pb-28 xl:px-20 ${
           isExpanded ? "gap-8 lg:gap-0" : "gap-10 lg:gap-16 xl:gap-24"

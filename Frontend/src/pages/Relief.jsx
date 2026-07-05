@@ -20,6 +20,7 @@ import 'leaflet/dist/leaflet.css'
 import { api } from '../config/api.js'
 import { buttonHover, buttonTap, sectionGroup, sectionItem, sectionViewport } from '../lib/motion.js'
 import { type } from '../lib/typography.js'
+import FireServiceSection, { DEFAULT_NATIONAL_FALLBACK } from '../components/FireServiceSection.jsx'
 
 // ─── Constants ───
 const DEFAULT_CENTER = [23.8103, 90.4125] // Dhaka
@@ -27,7 +28,7 @@ const DEFAULT_ZOOM = 14
 const RADIUS_OPTIONS = [500, 1000, 2000, 3000, 5000]
 const OSRM_ROUTE_URL = 'https://router.project-osrm.org/route/v1/foot'
 
-// ─── Leaflet icon fix (webpack/vite strips default marker icons) ───
+// ─── Leaflet icon fix ───
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -67,6 +68,7 @@ const placeIcon = new L.DivIcon({
 function placeTypeIcon(placeType) {
   const size = 15
   const props = { size, strokeWidth: 2 }
+
   switch (placeType) {
     case 'park':
     case 'garden':
@@ -93,6 +95,7 @@ function formatDistance(meters) {
 // ─── Map re-center helper component ───
 function MapUpdater({ center, zoom, routeCoords }) {
   const map = useMap()
+
   useEffect(() => {
     if (routeCoords?.length > 1) {
       map.fitBounds(routeCoords, { padding: [42, 42], maxZoom: 16, animate: true })
@@ -106,6 +109,31 @@ function MapUpdater({ center, zoom, routeCoords }) {
     const timer = window.setTimeout(() => map.invalidateSize(), 120)
     return () => window.clearTimeout(timer)
   }, [map])
+
+  return null
+}
+
+function MapInteractionLock({ locked }) {
+  const map = useMap()
+
+  useEffect(() => {
+    const interactions = [
+      map.dragging,
+      map.touchZoom,
+      map.doubleClickZoom,
+      map.scrollWheelZoom,
+      map.boxZoom,
+      map.keyboard,
+    ].filter(Boolean)
+
+    interactions.forEach((interaction) => {
+      if (locked) {
+        interaction.disable()
+      } else {
+        interaction.enable()
+      }
+    })
+  }, [locked, map])
 
   return null
 }
@@ -135,7 +163,7 @@ function ReliefSkeleton() {
 function PlaceCard({ place, index, isActive, onClick, className = '' }) {
   return (
     <motion.article
-      className={`cursor-pointer border p-4 transition-colors ${
+      className={`cursor-pointer rounded-lg border p-4 transition-colors ${
         isActive
           ? 'border-[#ff5330] bg-[#fff6f4]'
           : 'border-[#ddd] bg-[#f4f4f4] hover:border-[#bbb]'
@@ -150,15 +178,17 @@ function PlaceCard({ place, index, isActive, onClick, className = '' }) {
           0{index + 1}
         </span>
       </div>
+
       <div className="mb-3 flex items-center gap-3">
         <span className={`flex items-center gap-1.5 font-bold text-[#2b2b2b] ${type.meta}`}>
           {placeTypeIcon(place.type)}
           <span className="capitalize">{place.type?.replace(/_/g, ' ') || 'Open space'}</span>
         </span>
         <span className={`font-medium text-[#888] ${type.meta}`}>
-          •  {formatDistance(place.distance_m)}
+          • {formatDistance(place.distance_m)}
         </span>
       </div>
+
       <p className={`m-0 text-[#5e5e5e] ${type.bodySmall}`}>
         Located {formatDistance(place.distance_m)} from your position.{' '}
         {place.type === 'park' || place.type === 'garden'
@@ -181,14 +211,52 @@ function Relief() {
   const [mapZoom, setMapZoom] = useState(DEFAULT_ZOOM)
   const [radiusM, setRadiusM] = useState(1000)
   const [activeResource, setActiveResource] = useState(0)
-  const [geoStatus, setGeoStatus] = useState('idle') // idle | locating | granted | denied
+  const [geoStatus, setGeoStatus] = useState('idle')
   const [radiusOpen, setRadiusOpen] = useState(false)
   const [routeCoords, setRouteCoords] = useState([])
-  const [routeStatus, setRouteStatus] = useState('idle') // idle | loading | ready | fallback
+  const [routeStatus, setRouteStatus] = useState('idle')
   const radiusRef = useRef(null)
   const routeAbortRef = useRef(null)
 
+  // ─── Fire brigade state ───
+  const [fireStations, setFireStations] = useState([])
+  const [fireLoading, setFireLoading] = useState(false)
+  const [fireError, setFireError] = useState(null)
+  const [fireNote, setFireNote] = useState(null)
+  const [fireDistrict, setFireDistrict] = useState(null)
+  const [nationalFallback, setNationalFallback] = useState(DEFAULT_NATIONAL_FALLBACK)
+  const [fireShowAll, setFireShowAll] = useState(false)
+  const [fireCardsPerRow, setFireCardsPerRow] = useState(3)
+  const fireAbortRef = useRef(null)
+
   const activeItem = places[activeResource]
+  const initialFireCardCount = fireCardsPerRow * 2
+  const visibleFireStations = fireShowAll
+    ? fireStations
+    : fireStations.slice(0, initialFireCardCount)
+  const hiddenFireCount = Math.max(fireStations.length - initialFireCardCount, 0)
+  const isMapLocked = geoStatus !== 'granted' || places.length === 0
+
+  // Responsive card count: always show two visual rows first.
+  useEffect(() => {
+    function updateCardsPerRow() {
+      if (window.innerWidth >= 1024) {
+        setFireCardsPerRow(3)
+      } else if (window.innerWidth >= 640) {
+        setFireCardsPerRow(2)
+      } else {
+        setFireCardsPerRow(1)
+      }
+    }
+
+    updateCardsPerRow()
+    window.addEventListener('resize', updateCardsPerRow)
+    return () => window.removeEventListener('resize', updateCardsPerRow)
+  }, [])
+
+  useEffect(() => {
+    setFireShowAll(false)
+  }, [fireStations.length, fireDistrict])
 
   // Close radius dropdown on outside click
   useEffect(() => {
@@ -197,16 +265,44 @@ function Relief() {
         setRadiusOpen(false)
       }
     }
+
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  // Load national hotline fallback immediately, before any input.
   useEffect(() => {
-    return () => routeAbortRef.current?.abort()
+    let mounted = true
+
+    async function fetchInitialFireFallback() {
+      try {
+        const fbRes = await api.get('/v1/fire-brigade/divisions')
+        if (!mounted) return
+
+        setNationalFallback(fbRes.data?.national_fallback || DEFAULT_NATIONAL_FALLBACK)
+      } catch {
+        if (!mounted) return
+        setNationalFallback(DEFAULT_NATIONAL_FALLBACK)
+      }
+    }
+
+    fetchInitialFireFallback()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      routeAbortRef.current?.abort()
+      fireAbortRef.current?.abort()
+    }
   }, [])
 
   const mergePlaces = useCallback((incoming, existing = []) => {
     const merged = new Map()
+
     ;[...existing, ...incoming].forEach((place) => {
       const key = `${Number(place.lat).toFixed(6)}:${Number(place.lon).toFixed(6)}:${place.name}`
       merged.set(key, place)
@@ -220,32 +316,42 @@ function Relief() {
     async (lat, lon, radius) => {
       setLoading(true)
       setError(null)
+
       try {
         const response = await api.get('/v1/safe-places', {
           params: { lat, lon, radius_m: radius },
         })
+
         const fetched = response.data?.places || []
+
         if (fetched.length === 0) {
           setError('No open places found nearby. Try increasing the search radius.')
         }
+
         setPlaces((current) => {
           const reusable = current.filter((place) => place.distance_m <= radius)
           const nextPlaces = mergePlaces(fetched, reusable)
+
           if (nextPlaces.length > 0) setError(null)
+
           return nextPlaces
         })
+
         setActiveResource(0)
         setRouteCoords([])
         setRouteStatus('idle')
       } catch (err) {
         console.error('[Relief] Failed to fetch safe places:', err)
+
         const message =
           err.response?.data?.error ||
           (err.code === 'ERR_NETWORK'
             ? 'Unable to reach the server. Make sure the backend is running.'
             : 'Failed to find nearby safe places.')
+
         setPlaces((current) => {
           const reusable = current.filter((place) => place.distance_m <= radius)
+
           if (reusable.length > 0) {
             setError(null)
             return reusable
@@ -261,6 +367,90 @@ function Relief() {
     [mergePlaces]
   )
 
+  // ─── Reverse-geocode coordinates to district and fetch fire stations ───
+  const fetchFireBrigade = useCallback(async (lat, lon) => {
+    fireAbortRef.current?.abort()
+
+    const controller = new AbortController()
+    fireAbortRef.current = controller
+
+    setFireLoading(true)
+    setFireError(null)
+    setFireNote(null)
+    setFireStations([])
+    setFireDistrict(null)
+
+    try {
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1`,
+        {
+          signal: controller.signal,
+          headers: { 'Accept-Language': 'en' },
+        }
+      )
+
+      if (!geoRes.ok) throw new Error('Reverse geocoding failed')
+
+      const geoData = await geoRes.json()
+
+      const district =
+        geoData.address?.state_district?.replace(/\s*District$/i, '') ||
+        geoData.address?.city ||
+        geoData.address?.county ||
+        geoData.address?.state
+
+      if (!district) {
+        setFireError('Could not determine your district from the location.')
+
+        try {
+          const fbRes = await api.get('/v1/fire-brigade/divisions', {
+            signal: controller.signal,
+          })
+          setNationalFallback(fbRes.data?.national_fallback || DEFAULT_NATIONAL_FALLBACK)
+        } catch {
+          setNationalFallback(DEFAULT_NATIONAL_FALLBACK)
+        }
+
+        return
+      }
+
+      setFireDistrict(district)
+
+      const fbRes = await api.get('/v1/fire-brigade/search', {
+        params: { district },
+        signal: controller.signal,
+      })
+
+      const data = fbRes.data
+
+      setFireStations(data.stations || [])
+      setNationalFallback(data.national_fallback || DEFAULT_NATIONAL_FALLBACK)
+      setFireNote(data.note || null)
+    } catch (err) {
+      if (err.name === 'AbortError' || err.name === 'CanceledError') return
+
+      console.error('[Relief] Fire brigade fetch error:', err)
+
+      if (err.response?.status === 404) {
+        const errData = err.response.data
+
+        setFireError(errData.error || 'No fire stations found for your district.')
+        setNationalFallback(errData.national_fallback || DEFAULT_NATIONAL_FALLBACK)
+      } else {
+        setFireError('Unable to load fire brigade data. National hotlines are shown below.')
+
+        try {
+          const fbRes = await api.get('/v1/fire-brigade/divisions')
+          setNationalFallback(fbRes.data?.national_fallback || DEFAULT_NATIONAL_FALLBACK)
+        } catch {
+          setNationalFallback(DEFAULT_NATIONAL_FALLBACK)
+        }
+      }
+    } finally {
+      setFireLoading(false)
+    }
+  }, [])
+
   // ─── Get user location + fetch ───
   const locateAndFetch = useCallback(
     (radius = radiusM) => {
@@ -270,34 +460,41 @@ function Relief() {
       }
 
       setGeoStatus('locating')
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords
+
           setUserPos([latitude, longitude])
           setMapCenter([latitude, longitude])
           setMapZoom(radius <= 1000 ? 15 : radius <= 2000 ? 14 : 13)
           setGeoStatus('granted')
+
           fetchPlaces(latitude, longitude, radius)
+          fetchFireBrigade(latitude, longitude)
         },
         (err) => {
           console.error('[Relief] Geolocation error:', err)
+
           setGeoStatus('denied')
-          // Fall back to Dhaka center
           setUserPos(DEFAULT_CENTER)
           setMapCenter(DEFAULT_CENTER)
           setGeoStatus('granted')
+
           fetchPlaces(DEFAULT_CENTER[0], DEFAULT_CENTER[1], radius)
+          fetchFireBrigade(DEFAULT_CENTER[0], DEFAULT_CENTER[1])
         },
         { enableHighAccuracy: true, timeout: 10000 }
       )
     },
-    [radiusM, fetchPlaces]
+    [radiusM, fetchPlaces, fetchFireBrigade]
   )
 
   // ─── Handle radius change ───
   const handleRadiusChange = (newRadius) => {
     setRadiusM(newRadius)
     setRadiusOpen(false)
+
     if (userPos) {
       setMapZoom(newRadius <= 1000 ? 15 : newRadius <= 2000 ? 14 : 13)
       fetchPlaces(userPos[0], userPos[1], newRadius)
@@ -307,11 +504,14 @@ function Relief() {
   // ─── Mobile carousel ───
   const showPrevious = () => {
     if (places.length === 0) return
+
     const nextIndex = activeResource === 0 ? places.length - 1 : activeResource - 1
     handlePlaceClick(nextIndex)
   }
+
   const showNext = () => {
     if (places.length === 0) return
+
     const nextIndex = activeResource === places.length - 1 ? 0 : activeResource + 1
     handlePlaceClick(nextIndex)
   }
@@ -319,7 +519,9 @@ function Relief() {
   // ─── Center map on a place when clicking its card ───
   const handlePlaceClick = async (index) => {
     setActiveResource(index)
+
     const place = places[index]
+
     if (place) {
       const destination = [place.lat, place.lon]
       setMapCenter(destination)
@@ -331,6 +533,7 @@ function Relief() {
       }
 
       const fallbackRoute = [userPos, destination]
+
       setRouteCoords(fallbackRoute)
       setRouteStatus('loading')
       routeAbortRef.current?.abort()
@@ -340,6 +543,7 @@ function Relief() {
 
       try {
         const coordinates = `${userPos[1]},${userPos[0]};${place.lon},${place.lat}`
+
         const response = await fetch(
           `${OSRM_ROUTE_URL}/${coordinates}?overview=full&geometries=geojson&steps=false`,
           { signal: controller.signal }
@@ -349,13 +553,18 @@ function Relief() {
 
         const data = await response.json()
         const route = data.routes?.[0]?.geometry?.coordinates
-        if (!Array.isArray(route) || route.length < 2) throw new Error('No route geometry returned')
+
+        if (!Array.isArray(route) || route.length < 2) {
+          throw new Error('No route geometry returned')
+        }
 
         setRouteCoords(route.map(([lon, lat]) => [lat, lon]))
         setRouteStatus('ready')
       } catch (err) {
         if (err.name === 'AbortError') return
+
         console.error('[Relief] Failed to fetch route:', err)
+
         setRouteCoords(fallbackRoute)
         setRouteStatus('fallback')
       }
@@ -363,7 +572,8 @@ function Relief() {
   }
 
   return (
-    <section id="relief" className="scroll-mt-[66px]">
+    <>
+      <section id="relief" className="scroll-mt-[66px]">
       <motion.div
         className="mx-auto grid w-full max-w-[1440px] justify-items-center gap-12 px-5 py-14 sm:px-8 sm:py-16 md:gap-[70px] md:px-10 md:py-20 lg:px-16 lg:py-[112px] xl:px-20"
         variants={sectionGroup}
@@ -376,6 +586,7 @@ function Relief() {
           <h2 className={type.sectionTitle}>
             Search for nearest Open Places around you
           </h2>
+
           <p className={`mx-auto my-5 max-w-[615px] text-[#5e5e5e] md:mb-7 ${type.body}`}>
             Find nearby parks, open fields, playgrounds, and safe assembly
             points that can be used during an earthquake emergency.
@@ -397,6 +608,7 @@ function Relief() {
                   className={`text-[#888] transition-transform ${radiusOpen ? 'rotate-180' : ''}`}
                 />
               </button>
+
               <AnimatePresence>
                 {radiusOpen && (
                   <motion.div
@@ -472,7 +684,12 @@ function Relief() {
             <MapContainer
               center={mapCenter}
               zoom={mapZoom}
-              scrollWheelZoom={true}
+              scrollWheelZoom={!isMapLocked}
+              dragging={!isMapLocked}
+              touchZoom={!isMapLocked}
+              doubleClickZoom={!isMapLocked}
+              boxZoom={!isMapLocked}
+              keyboard={!isMapLocked}
               style={{ height: '100%', width: '100%' }}
               zoomControl={true}
             >
@@ -480,9 +697,10 @@ function Relief() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              <MapUpdater center={mapCenter} zoom={mapZoom} routeCoords={routeCoords} />
 
-              {/* User position marker */}
+              <MapUpdater center={mapCenter} zoom={mapZoom} routeCoords={routeCoords} />
+              <MapInteractionLock locked={isMapLocked} />
+
               {userPos && (
                 <>
                   <Marker position={userPos} icon={userIcon}>
@@ -490,6 +708,7 @@ function Relief() {
                       <strong>Your location</strong>
                     </Popup>
                   </Marker>
+
                   <Circle
                     center={userPos}
                     radius={radiusM}
@@ -504,7 +723,6 @@ function Relief() {
                 </>
               )}
 
-              {/* Safe place markers */}
               {places.map((place, index) => (
                 <Marker
                   key={`${place.lat}-${place.lon}-${index}`}
@@ -539,7 +757,6 @@ function Relief() {
               )}
             </MapContainer>
 
-            {/* Re-center button overlay */}
             {userPos && (
               <button
                 type="button"
@@ -551,13 +768,23 @@ function Relief() {
               </button>
             )}
 
-            {/* Prompt overlay when no search has been done */}
-            {geoStatus === 'idle' && (
-              <div className="pointer-events-none absolute inset-0 z-[999] flex items-center justify-center bg-black/20">
-                <div className="pointer-events-auto rounded-xl bg-white/95 px-6 py-5 text-center shadow-xl backdrop-blur">
-                  <LocateFixed size={28} className="mx-auto mb-2 text-[#ff5330]" />
+            {isMapLocked && (
+              <div className="pointer-events-auto absolute inset-0 z-[999] flex items-center justify-center bg-black/20 px-4">
+                <div className="max-w-[280px] rounded-xl bg-white/95 px-6 py-5 text-center shadow-xl backdrop-blur">
+                  {geoStatus === 'locating' || loading ? (
+                    <Loader2 size={28} className="mx-auto mb-2 animate-spin text-[#ff5330]" />
+                  ) : (
+                    <LocateFixed size={28} className="mx-auto mb-2 text-[#ff5330]" />
+                  )}
                   <p className={`m-0 text-[#333] ${type.label}`}>
-                    Click &quot;Find Open Places&quot; to start
+                    {geoStatus === 'locating' || loading
+                      ? 'Searching nearby open places…'
+                      : geoStatus === 'granted'
+                      ? 'No open places shown yet'
+                      : 'Click "Find Open Places" to start'}
+                  </p>
+                  <p className={`m-0 mt-1 text-[#777] ${type.legal}`}>
+                    Map interaction will unlock after nearby results appear.
                   </p>
                 </div>
               </div>
@@ -586,7 +813,9 @@ function Relief() {
                 <div className="grid h-12 w-12 place-items-center rounded-full bg-[#fff0ed]">
                   <AlertTriangle size={22} className="text-[#ff5330]" />
                 </div>
-                <p className={`m-0 max-w-[240px] text-[#5e5e5e] ${type.bodySmall}`}>{error}</p>
+                <p className={`m-0 max-w-[240px] text-[#5e5e5e] ${type.bodySmall}`}>
+                  {error}
+                </p>
               </div>
             ) : places.length > 0 ? (
               <div className="grid min-h-0 flex-1 content-start gap-3 overflow-y-auto p-4">
@@ -632,7 +861,9 @@ function Relief() {
               ) : error ? (
                 <div className="flex flex-col items-center gap-3 py-6 text-center">
                   <AlertTriangle size={22} className="text-[#ff5330]" />
-                  <p className={`m-0 text-[#5e5e5e] ${type.bodySmall}`}>{error}</p>
+                  <p className={`m-0 text-[#5e5e5e] ${type.bodySmall}`}>
+                    {error}
+                  </p>
                 </div>
               ) : places.length > 0 && activeItem ? (
                 <>
@@ -668,6 +899,7 @@ function Relief() {
                         />
                       ))}
                     </div>
+
                     <div className="flex gap-3">
                       <motion.button
                         className="grid h-10 w-10 place-items-center rounded-full border border-[#222] bg-[#fafafa] text-[#121212]"
@@ -679,6 +911,7 @@ function Relief() {
                       >
                         <ArrowLeft size={18} />
                       </motion.button>
+
                       <motion.button
                         className="grid h-10 w-10 place-items-center rounded-full border border-[#222] bg-[#fafafa] text-[#121212]"
                         type="button"
@@ -702,6 +935,22 @@ function Relief() {
         </motion.div>
       </motion.div>
     </section>
+
+    <FireServiceSection
+      geoStatus={geoStatus}
+      fireStations={fireStations}
+      fireLoading={fireLoading}
+      fireError={fireError}
+      fireNote={fireNote}
+      fireDistrict={fireDistrict}
+      nationalFallback={nationalFallback}
+      visibleFireStations={visibleFireStations}
+      hiddenFireCount={hiddenFireCount}
+      fireShowAll={fireShowAll}
+      onLocate={() => locateAndFetch(radiusM)}
+      onToggleShowAll={() => setFireShowAll((current) => !current)}
+    />
+    </>
   )
 }
 

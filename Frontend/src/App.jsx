@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import Navbar from './components/Navbar.jsx'
 import Footer from './components/Footer.jsx'
 import BackToTop from './components/BackToTop.jsx'
+import Chatbot from './components/Chatbot.jsx'
 import Home from './pages/Home.jsx'
 import Alerts from './pages/Alerts.jsx'
 import Inspect from './pages/Inspect.jsx'
@@ -27,6 +28,7 @@ function App() {
       </main>
       <Footer />
       <BackToTop />
+      <Chatbot />
     </div>
   )
 }

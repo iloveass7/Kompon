@@ -12,7 +12,7 @@ function BackToTop() {
 
   return (
     <motion.button
-      className="fixed bottom-5 right-5 z-40 grid h-11 w-11 place-items-center rounded-full border border-[#121212] bg-[#121212] text-white shadow-sm transition-colors hover:border-[#ff5330] hover:bg-[#ff5330] md:bottom-7 md:right-7"
+      className="fixed bottom-[90px] right-5 z-40 grid h-14 w-14 place-items-center rounded-full border border-[#121212] bg-[#121212] text-white shadow-sm transition-colors hover:border-[#ff5330] hover:bg-[#ff5330] md:bottom-[100px] md:right-7"
       type="button"
       aria-label="Back to top"
       onClick={goToTop}
@@ -21,7 +21,7 @@ function BackToTop() {
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.96 }}
     >
-      <ArrowUp size={19} />
+      <ArrowUp size={24} />
     </motion.button>
   )
 }
