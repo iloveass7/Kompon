@@ -7,7 +7,6 @@
 import "dotenv/config";
 
 import express from "express";
-import mongoose from "mongoose";
 import compression from "compression";
 import cron from "node-cron";
 
@@ -20,6 +19,10 @@ import newsRouter from "./routes/news.js";
 import safePlacesRouter from "./routes/safePlaces.js";
 import fireBrigadeRouter from "./routes/fireBrigade.js";
 import hazardRouter from "./routes/hazard.js";
+import chatRouter from "./routes/chat.js";
+
+import { fetchServingData } from "./scripts/fetchServingData.js";
+import { initDuckDB } from "./services/duckdbClient.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -56,6 +59,7 @@ app.use("/v1/news", newsRouter);
 app.use("/v1/safe-places", safePlacesRouter);
 app.use("/v1/fire-brigade", fireBrigadeRouter);
 app.use("/v1/hazard", hazardRouter);
+app.use("/v1/chat", chatRouter);
 
 // ─── 404 handler ───
 app.use((_req, res) => {
@@ -84,25 +88,12 @@ app.use((err, _req, res, _next) => {
 
 // ─── Start server ───
 async function start() {
-  // 1. Connect to MongoDB Atlas
-  const mongoUri = process.env.MONGODB_URI;
-  if (!mongoUri) {
-    console.error(
-      "MONGODB_URI is not set. Copy .env.example to .env and configure it."
-    );
-    process.exit(1);
-  }
-
+  // 1. Download Parquet data and init DuckDB
   try {
-    await mongoose.connect(mongoUri, {
-      // Mongoose 8 defaults are sane — no need for deprecated options
-      serverSelectionTimeoutMS: 10000, // 10s timeout instead of 30s default
-    });
-    console.log("[DB] Connected to MongoDB Atlas.");
+    await fetchServingData();
+    await initDuckDB();
   } catch (err) {
-    console.error("[DB] MongoDB connection failed:", err.message);
-    console.warn("[DB] Server will start without MongoDB. Endpoints needing geospatial data (hazard, risk-assessment location) will return errors.");
-    console.warn("[DB] Fix: Ensure your IP is whitelisted in MongoDB Atlas → Network Access → Add Current IP Address.");
+    console.error("[DuckDB] Initialization failed:", err.message);
   }
 
   // 2. Initial news cache population
@@ -130,12 +121,6 @@ async function start() {
 // ─── Graceful shutdown ───
 async function shutdown(signal) {
   console.log(`\n[Kompon] Received ${signal}. Shutting down gracefully...`);
-  try {
-    await mongoose.disconnect();
-    console.log("[DB] MongoDB disconnected.");
-  } catch (err) {
-    console.error("[DB] Error during disconnect:", err.message);
-  }
   process.exit(0);
 }
 

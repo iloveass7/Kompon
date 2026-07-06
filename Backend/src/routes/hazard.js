@@ -5,7 +5,7 @@
 import { Router } from "express";
 import { rateLimit } from "../middleware/rateLimit.js";
 import { validateRequest, hazardSchema } from "../middleware/validate.js";
-import HazardPoint from "../models/HazardPoint.js";
+import { getNearestHazardPoint } from "../services/duckdbClient.js";
 
 const router = Router();
 
@@ -18,16 +18,7 @@ router.get(
     try {
       const { lat, lon } = req.query;
 
-      const nearest = await HazardPoint.findOne({
-        location: {
-          $near: {
-            $geometry: { type: "Point", coordinates: [lon, lat] },
-            $maxDistance: 500, // meters — matches the 250m grid spacing
-          },
-        },
-      })
-        .select("-_id -__v")
-        .lean();
+      const nearest = await getNearestHazardPoint(parseFloat(lat), parseFloat(lon));
 
       if (!nearest) {
         return res.status(404).json({
