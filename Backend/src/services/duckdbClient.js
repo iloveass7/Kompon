@@ -240,6 +240,20 @@ export async function getHazardHeatmapLayers(options = {}) {
     warmStaticHeatmapCache({ cellDeg, limit });
   }
 
+  if (!staticLayerFromCache && !includeScenarios) {
+    return {
+      status: 'building',
+      reason:
+        'Static heatmap cache is not available. Deploy Backend/data/hazard_heatmap_static.json to render the production heatmap.',
+      generated_at: new Date().toISOString(),
+      bounds: BD_BOUNDS,
+      cell_deg: cellDeg,
+      limit_per_layer: limit,
+      cache: getStaticHeatmapCacheStatus(),
+      layers,
+    };
+  }
+
   if (!duckdbAvailable) {
     return {
       status: layers.length > 0 ? 'ok' : 'building',
