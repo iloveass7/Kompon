@@ -23,6 +23,7 @@ import chatRouter from "./routes/chat.js";
 
 import { fetchServingData } from "./scripts/fetchServingData.js";
 import { initDuckDB } from "./services/duckdbClient.js";
+import { warmStaticHeatmapCache } from "./services/heatmapCache.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -89,6 +90,16 @@ app.use((err, _req, res, _next) => {
 
 // ─── Start server ───
 async function start() {
+  // Build the compact static heatmap cache in the background when only the CSV
+  // exists locally. The map route can then serve JSON instead of scanning a
+  // national grid on every request.
+  const heatmapWarmup = warmStaticHeatmapCache();
+  if (heatmapWarmup) {
+    heatmapWarmup.catch((err) =>
+      console.error("[HeatmapCache] Background warmup failed:", err.message)
+    );
+  }
+
   // 1. Download Parquet data and init DuckDB
   try {
     await fetchServingData();
