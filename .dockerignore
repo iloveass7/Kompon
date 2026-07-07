@@ -1,0 +1,14 @@
+.git
+.github
+.claude
+.agents
+node_modules
+Frontend/node_modules
+Frontend/dist
+Backend/node_modules
+Backend/.env
+Backend/env
+Backend/out.txt
+kompon-ml-space/.git_hf
+kompon-ml-space/__pycache__
+*.log

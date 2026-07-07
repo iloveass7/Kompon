@@ -1,6 +1,0 @@
-0000000000000000000000000000000000000000 ed8736bd1c4ab8382efff1906104df44e170fe1d iloveass7 <borshonjsr@gmail.com> 1783258064 +0600	commit (initial): Deploy kompon ML space
-ed8736bd1c4ab8382efff1906104df44e170fe1d ed8736bd1c4ab8382efff1906104df44e170fe1d iloveass7 <borshonjsr@gmail.com> 1783258128 +0600	Branch: renamed refs/heads/master to refs/heads/main
-ed8736bd1c4ab8382efff1906104df44e170fe1d c85921d104114c8a136593b5b3da708f97cd8b48 iloveass7 <borshonjsr@gmail.com> 1783258566 +0600
-c85921d104114c8a136593b5b3da708f97cd8b48 2de80ac8ac70ef3c80777115fce108e095d1bde6 iloveass7 <borshonjsr@gmail.com> 1783258705 +0600	commit: Fix color metadata in README
-2de80ac8ac70ef3c80777115fce108e095d1bde6 ca705c276b3e4b391bc464e16581d24032c3cdc5 iloveass7 <borshonjsr@gmail.com> 1783258842 +0600	commit: Fix libgl1-mesa-glx docker build error
-ca705c276b3e4b391bc464e16581d24032c3cdc5 836a993e98ed22fd6adac72e91ca6138221dc316 iloveass7 <borshonjsr@gmail.com> 1783264364 +0600	commit: feat: download weights dynamically from HF Hub at startup

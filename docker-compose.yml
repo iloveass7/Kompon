@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: ../deploy/docker/backend.Dockerfile
+    env_file:
+      - path: ./Backend/.env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-http://localhost:8080}
+      ML_SPACE_BASE_URL: ${ML_SPACE_BASE_URL:-}
+      HF_DATASET_REPO: ${HF_DATASET_REPO:-}
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/docker/frontend.Dockerfile
+      args:
+        VITE_API_ORIGIN: ${VITE_API_ORIGIN:-http://localhost:3001}
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
