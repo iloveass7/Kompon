@@ -42,6 +42,23 @@ function rowsToObjects(result, rows) {
   });
 }
 
+function sampleSpatialPoints(points, limit) {
+  if (points.length <= limit) return points;
+
+  const ordered = [...points].sort((a, b) => {
+    if (a.lat !== b.lat) return a.lat - b.lat;
+    return a.lon - b.lon;
+  });
+  const step = ordered.length / limit;
+  const sampled = [];
+
+  for (let index = 0; index < limit; index += 1) {
+    sampled.push(ordered[Math.floor(index * step)]);
+  }
+
+  return sampled;
+}
+
 function scenarioFileNameFromEventId(eventId) {
   const scenarioNumber = String(eventId).replace(/^event_/, '');
   return `scenario_${scenarioNumber}.parquet`;
@@ -183,8 +200,7 @@ async function queryHeatmapLayer({
       samples
     FROM binned
     WHERE raw_value IS NOT NULL
-    ORDER BY score DESC
-    LIMIT ${limit};
+    ORDER BY lat, lon;
   `;
 
   const result = await connection.run(query);
@@ -195,7 +211,8 @@ async function queryHeatmapLayer({
     id,
     label,
     metric,
-    points: objects
+    points: sampleSpatialPoints(
+      objects
       .map((row) => ({
         lat: Number(row.lat),
         lon: Number(row.lon),
@@ -203,7 +220,9 @@ async function queryHeatmapLayer({
         score: clampNumber(row.score, 0, 0, 100),
         samples: Number(row.samples) || 0,
       }))
-      .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lon)),
+        .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lon)),
+      limit
+    ),
   };
 }
 

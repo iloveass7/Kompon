@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Bot, MessageCircle, Send, Trash2, X, Sparkles } from 'lucide-react'
+import { MessageCircle, Send, Trash2, X, Sparkles } from 'lucide-react'
+import { api } from '../config/api.js'
 import { type } from '../lib/typography.js'
 
 const QUICK_PROMPTS = [
@@ -42,11 +43,26 @@ function buildReply(input) {
   return 'I can help with earthquake safety, crack inspection, nearby relief places, alerts, and emergency preparation. Tell me what happened or choose one of the quick prompts.'
 }
 
+function toApiHistory(messages) {
+  return messages
+    .filter((message) => message.role === 'user' || message.role === 'bot')
+    .slice(-8)
+    .map((message) => ({
+      role: message.role === 'bot' ? 'assistant' : 'user',
+      content: message.text,
+    }))
+}
+
 function TypingIndicator() {
   return (
     <div className="flex items-end gap-2">
-      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#fff0ed] text-[#ff5330]">
-        <Bot size={15} />
+      <div className="h-8 w-8 shrink-0">
+        <img
+          src="/kompon.png"
+          alt=""
+          aria-hidden="true"
+          className="h-full w-full rounded-full object-cover"
+        />
       </div>
 
       <div className="rounded-2xl rounded-bl-md border border-[#fed7aa] bg-[#fff7ed] px-4 py-3">
@@ -71,24 +87,35 @@ function ChatMessage({ message }) {
       transition={{ duration: 0.18 }}
     >
       {isBot && (
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#fff0ed] text-[#ff5330]">
-          <Bot size={15} />
+        <div className="h-8 w-8 shrink-0">
+          <img
+            src="/kompon.png"
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full rounded-full object-cover"
+          />
         </div>
       )}
 
       <div
-        className={`max-w-[78%] rounded-2xl border px-4 py-3 shadow-sm ${
+        className={`max-w-[78%] whitespace-pre-wrap break-words rounded-2xl border px-4 py-3 text-left text-[15px] leading-[1.55] tracking-normal shadow-sm ${
           isBot
             ? 'rounded-bl-md border-[#e8e8e8] bg-[#fafafa] text-[#333]'
             : 'rounded-br-md border-[#ff5330] bg-[#ff5330] text-white shadow-[0_10px_30px_rgba(255,83,48,0.22)]'
-        } ${type.bodySmall}`}
+        }`}
       >
         {message.text}
       </div>
 
       {!isBot && (
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#121212] text-white">
-          <span className="text-[10px] font-black">You</span>
+        <div className="relative h-8 w-8 shrink-0">
+          <img
+            src="/user-placeholder.svg"
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full rounded-full object-cover"
+          />
+          <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-[#ff5330]" />
         </div>
       )}
     </motion.div>
@@ -129,20 +156,36 @@ export default function Chatbot() {
     }
   }, [])
 
-  const sendMessage = (value = input) => {
+  const sendMessage = async (value = input) => {
     const clean = value.trim()
     if (!clean || thinking) return
 
+    const outgoingMessages = [...messages, { role: 'user', text: clean }]
+
     setInput('')
-    setMessages((current) => [...current, { role: 'user', text: clean }])
+    setMessages(outgoingMessages)
     setThinking(true)
 
     window.clearTimeout(responseTimer.current)
 
-    responseTimer.current = window.setTimeout(() => {
+    try {
+      const response = await api.post('/v1/chat', {
+        message: clean,
+        history: toApiHistory(messages),
+      })
+
+      const reply =
+        typeof response.data?.reply === 'string' && response.data.reply.trim()
+          ? response.data.reply.trim()
+          : buildReply(clean)
+
+      setMessages((current) => [...current, { role: 'bot', text: reply }])
+    } catch (err) {
+      console.error('[Chatbot] Backend chat failed:', err)
       setMessages((current) => [...current, { role: 'bot', text: buildReply(clean) }])
+    } finally {
       setThinking(false)
-    }, 450)
+    }
   }
 
   const clearChat = () => {
@@ -168,9 +211,14 @@ export default function Chatbot() {
             <header className="relative overflow-hidden border-b border-[#121212] bg-[#121212] px-4 py-4 text-white">
               <div className="relative flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#ff5330] text-white shadow-[0_12px_28px_rgba(255,83,48,0.24)]">
-                    <Bot size={21} />
-                    <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#121212] bg-[#22c55e]" />
+                  <div className="relative h-11 w-11 shrink-0">
+                    <img
+                      src="/kompon_light.png"
+                      alt=""
+                      aria-hidden="true"
+                      className="h-full w-full rounded-2xl bg-white object-contain p-[2px] shadow-[0_12px_28px_rgba(255,83,48,0.18)]"
+                    />
+                    <span className="absolute -bottom-1 -right-1 z-10 h-4 w-4 rounded-full border-2 border-[#121212] bg-[#22c55e]" />
                   </div>
 
                   <div className="min-w-0">
@@ -206,8 +254,14 @@ export default function Chatbot() {
             </header>
 
             {/* Messages */}
-            <div className="min-h-0 flex-1 overflow-y-auto bg-[linear-gradient(180deg,#ffffff_0%,#fafafa_100%)] px-4 py-4">
-              <div className="grid gap-3">
+            <div className="relative min-h-0 flex-1 overflow-y-auto bg-[linear-gradient(180deg,#ffffff_0%,#fafafa_100%)] px-4 py-4">
+              <img
+                src="/kompon.png"
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute left-1/2 top-8 h-24 w-24 -translate-x-1/2 object-contain opacity-[0.035]"
+              />
+              <div className="relative grid gap-3">
                 {messages.map((message, index) => (
                   <ChatMessage key={`${message.role}-${index}-${message.text}`} message={message} />
                 ))}
@@ -227,7 +281,7 @@ export default function Chatbot() {
                   <motion.button
                     key={currentSuggestion}
                     type="button"
-                    className={`flex w-full items-center justify-between gap-3 rounded-2xl border border-[#e1e1e1] bg-white px-3.5 py-3 text-left text-[#333] shadow-sm transition-colors hover:border-[#ff5330] hover:bg-[#fff6f4] hover:text-[#ff5330] disabled:cursor-not-allowed disabled:opacity-60 ${type.legal}`}
+                    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[#e1e1e1] bg-white px-3.5 py-3 text-left text-xs leading-[1.45] tracking-normal text-[#333] shadow-sm transition-colors hover:border-[#ff5330] hover:bg-[#fff6f4] hover:text-[#ff5330] disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={() => sendMessage(currentSuggestion)}
                     disabled={thinking}
                     initial={{ opacity: 0, y: 8 }}
@@ -250,7 +304,7 @@ export default function Chatbot() {
               >
                 <div className="relative min-w-0 flex-1">
                   <input
-                    className={`min-h-12 w-full rounded-2xl border border-[#d6d6d6] bg-white px-4 text-[#121212] outline-none transition-colors placeholder:text-[#999] focus:border-[#ff5330] focus:ring-4 focus:ring-[#ff5330]/10 ${type.bodySmall}`}
+                    className="min-h-12 w-full rounded-2xl border border-[#d6d6d6] bg-white px-4 text-left text-[15px] leading-none tracking-normal text-[#121212] outline-none transition-colors placeholder:text-[#999] focus:border-[#ff5330] focus:ring-4 focus:ring-[#ff5330]/10"
                     value={input}
                     onChange={(event) => setInput(event.target.value)}
                     placeholder="Ask about safety..."

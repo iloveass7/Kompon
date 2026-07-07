@@ -9,10 +9,10 @@ const HEATMAP_DEFAULT_LAYER = 'static'
 const MAP_MAX_WIDTH = 690
 const [, , BD_VIEWBOX_WIDTH, BD_VIEWBOX_HEIGHT] = BD_VIEWBOX.split(' ').map(Number)
 const QR_SCAN_BOX = {
-  x: 18,
-  y: 18,
-  width: BD_VIEWBOX_WIDTH - 36,
-  height: BD_VIEWBOX_HEIGHT - 36,
+  x: 0,
+  y: 0,
+  width: BD_VIEWBOX_WIDTH,
+  height: BD_VIEWBOX_HEIGHT,
 }
 const SCAN_DURATION_MS = 3800
 const SCAN_FADE_MS = 650
@@ -137,35 +137,43 @@ function HeatmapTooltip({ point }) {
 
 function QrScanAnimation() {
   const moduleSize = QR_SCAN_BOX.width / 14
-  const cornerSize = 58
+  const cornerSize = 64
 
   return (
     <g pointerEvents="none">
+      <rect
+        x={QR_SCAN_BOX.x}
+        y={QR_SCAN_BOX.y}
+        width={QR_SCAN_BOX.width}
+        height={QR_SCAN_BOX.height}
+        fill="#fafafa"
+        fillOpacity="0.24"
+      />
       <path
         d={BD_OUTLINE}
         fill="#fafafa"
-        fillOpacity="0.62"
+        fillOpacity="0.5"
       />
-      <g clipPath="url(#bd-heatmap-clip)">
+      <g>
         <rect
           x={QR_SCAN_BOX.x}
           y={QR_SCAN_BOX.y}
           width={QR_SCAN_BOX.width}
           height={QR_SCAN_BOX.height}
           fill="#ffffff"
-          fillOpacity="0.16"
+          fillOpacity="0.1"
         />
         {QR_MODULES.map(([col, row]) => (
           <motion.rect
             key={`${col}-${row}`}
-            x={QR_SCAN_BOX.x + col * moduleSize + 4}
-            y={QR_SCAN_BOX.y + row * moduleSize + 4}
-            width={moduleSize * 0.58}
-            height={moduleSize * 0.58}
+            x={QR_SCAN_BOX.x + col * moduleSize + moduleSize * 0.18}
+            y={QR_SCAN_BOX.y + row * moduleSize + moduleSize * 0.18}
+            width={moduleSize * 0.44}
+            height={moduleSize * 0.44}
             rx="3"
             fill="#ff5330"
             initial={{ opacity: 0.08 }}
-            animate={{ opacity: [0.06, 0.28, 0.1] }}
+            animate={{ opacity: [0.04, 0.18, 0.06] }}
             transition={{
               duration: 1.65,
               repeat: Infinity,
@@ -178,10 +186,10 @@ function QrScanAnimation() {
           x={QR_SCAN_BOX.x}
           y={QR_SCAN_BOX.y}
           width={QR_SCAN_BOX.width}
-          height="86"
+          height="92"
           fill="url(#bd-qr-scan-gradient)"
-          initial={{ y: -80 }}
-          animate={{ y: QR_SCAN_BOX.height + 80 }}
+          initial={{ y: -92 }}
+          animate={{ y: QR_SCAN_BOX.height + 92 }}
           transition={{ duration: SCAN_DURATION_SECONDS, ease: [0.45, 0, 0.2, 1] }}
         />
         <motion.line
@@ -580,38 +588,64 @@ function Map() {
                     </>
                   )}
                   {!showPulse && (
-                    <circle
-                      cx={division.x}
-                      cy={division.y}
-                      r={markerRadius + 5}
-                      fill="#ffffff"
-                      fillOpacity="0.18"
-                      stroke="#ffffff"
-                      strokeOpacity="0.35"
-                      strokeWidth="1.4"
-                    >
-                      <animate
-                        attributeName="r"
-                        begin={pulseDelay}
-                        dur="2.6s"
-                        repeatCount="indefinite"
-                        values={`${markerRadius + 4};${markerRadius + 11};${markerRadius + 4}`}
-                      />
-                      <animate
-                        attributeName="fill-opacity"
-                        begin={pulseDelay}
-                        dur="2.6s"
-                        repeatCount="indefinite"
-                        values="0.2;0.04;0.2"
-                      />
-                      <animate
-                        attributeName="stroke-opacity"
-                        begin={pulseDelay}
-                        dur="2.6s"
-                        repeatCount="indefinite"
-                        values="0.4;0.08;0.4"
-                      />
-                    </circle>
+                    <>
+                      <circle
+                        cx={division.x}
+                        cy={division.y}
+                        r={markerRadius + 6}
+                        fill="#ffffff"
+                        fillOpacity="0.28"
+                        stroke="#ffffff"
+                        strokeOpacity="0.68"
+                        strokeWidth="1.8"
+                      >
+                        <animate
+                          attributeName="r"
+                          begin={pulseDelay}
+                          dur="2.6s"
+                          repeatCount="indefinite"
+                          values={`${markerRadius + 5};${markerRadius + 14};${markerRadius + 5}`}
+                        />
+                        <animate
+                          attributeName="fill-opacity"
+                          begin={pulseDelay}
+                          dur="2.6s"
+                          repeatCount="indefinite"
+                          values="0.3;0.07;0.3"
+                        />
+                        <animate
+                          attributeName="stroke-opacity"
+                          begin={pulseDelay}
+                          dur="2.6s"
+                          repeatCount="indefinite"
+                          values="0.72;0.14;0.72"
+                        />
+                      </circle>
+                      <circle
+                        cx={division.x}
+                        cy={division.y}
+                        r={markerRadius + 6}
+                        fill="none"
+                        stroke="#111111"
+                        strokeOpacity="0.5"
+                        strokeWidth="1"
+                      >
+                        <animate
+                          attributeName="r"
+                          begin={pulseDelay}
+                          dur="2.6s"
+                          repeatCount="indefinite"
+                          values={`${markerRadius + 5};${markerRadius + 14};${markerRadius + 5}`}
+                        />
+                        <animate
+                          attributeName="stroke-opacity"
+                          begin={pulseDelay}
+                          dur="2.6s"
+                          repeatCount="indefinite"
+                          values="0.52;0.12;0.52"
+                        />
+                      </circle>
+                    </>
                   )}
                   <circle
                     cx={division.x}
@@ -619,8 +653,8 @@ function Map() {
                     r={showPulse ? markerRadius : markerRadius + 1}
                     fill={showPulse ? '#ff5330' : '#ffffff'}
                     stroke={showPulse ? '#ff5330' : '#111111'}
-                    strokeOpacity={showPulse ? '1' : '0.65'}
-                    strokeWidth={showPulse ? '2' : '1.6'}
+                    strokeOpacity={showPulse ? '1' : '0.48'}
+                    strokeWidth={showPulse ? '2' : '1.15'}
                   />
                   {!showPulse && (
                     <circle
@@ -639,8 +673,8 @@ function Map() {
                     fill={showPulse ? '#121212' : '#ffffff'}
                     paintOrder="stroke"
                     stroke={showPulse ? '#fafafa' : '#111111'}
-                    strokeWidth={showPulse ? '4' : '2.8'}
-                    strokeOpacity={showPulse ? '1' : '0.78'}
+                    strokeWidth={showPulse ? '4' : '2.1'}
+                    strokeOpacity={showPulse ? '1' : '0.82'}
                     strokeLinejoin="round"
                     textAnchor={division.anchor || 'start'}
                   >
