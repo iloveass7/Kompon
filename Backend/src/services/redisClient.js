@@ -4,10 +4,21 @@
 
 import { Redis } from "@upstash/redis";
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
-});
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+export const redisEnabled = Boolean(redisUrl && redisToken);
+
+const redis = redisEnabled
+  ? new Redis({
+      url: redisUrl,
+      token: redisToken,
+    })
+  : null;
+
+if (!redisEnabled) {
+  console.warn("[Redis] Upstash credentials not set; Redis cache and distributed rate limiting are disabled.");
+}
 
 /**
  * Get a value from Redis cache.
@@ -15,6 +26,8 @@ const redis = new Redis({
  * @returns {Promise<any|null>} parsed value or null on miss/error
  */
 export async function getCache(key) {
+  if (!redisEnabled || !redis) return null;
+
   try {
     const value = await redis.get(key);
     return value ?? null;
@@ -31,10 +44,14 @@ export async function getCache(key) {
  * @param {number} ttlSeconds
  */
 export async function setCache(key, value, ttlSeconds) {
+  if (!redisEnabled || !redis) return false;
+
   try {
     await redis.set(key, value, { ex: ttlSeconds });
+    return true;
   } catch (err) {
     console.error(`[Redis] SET error for key "${key}":`, err.message);
+    return false;
   }
 }
 

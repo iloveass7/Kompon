@@ -3,7 +3,7 @@
 // Per-endpoint limits per IP — the only access control on a no-auth API.
 
 import { Ratelimit } from "@upstash/ratelimit";
-import { redis } from "../services/redisClient.js";
+import { redis, redisEnabled } from "../services/redisClient.js";
 
 /**
  * Create a rate limiter with a sliding window.
@@ -22,14 +22,16 @@ function createLimiter(prefix, maxRequests, window) {
 }
 
 // Per-endpoint limiters (§7 limits)
-const limiters = {
-  riskAssessment: createLimiter("risk", 5, "1m"),
-  news: createLimiter("news", 30, "1m"),
-  safePlaces: createLimiter("safe", 20, "1m"),
-  fireBrigade: createLimiter("fire", 30, "1m"),
-  hazard: createLimiter("hazard", 30, "1m"),
-  general: createLimiter("general", 60, "1m"),
-};
+const limiters = redisEnabled
+  ? {
+      riskAssessment: createLimiter("risk", 5, "1m"),
+      news: createLimiter("news", 30, "1m"),
+      safePlaces: createLimiter("safe", 20, "1m"),
+      fireBrigade: createLimiter("fire", 30, "1m"),
+      hazard: createLimiter("hazard", 30, "1m"),
+      general: createLimiter("general", 60, "1m"),
+    }
+  : {};
 
 /**
  * Express middleware factory for rate limiting.
@@ -37,6 +39,10 @@ const limiters = {
  * @returns {Function} Express middleware
  */
 export function rateLimit(limiterName = "general") {
+  if (!redisEnabled) {
+    return (req, res, next) => next();
+  }
+
   const limiter = limiters[limiterName] || limiters.general;
 
   return async (req, res, next) => {

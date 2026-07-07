@@ -6,6 +6,9 @@ import { type } from '../lib/typography.js'
 import { BD_VIEWBOX, BD_DIVISIONS, BD_OUTLINE, BD_PROJECTION } from '../assets/bangladesh.js'
 
 const HEATMAP_DEFAULT_LAYER = 'static'
+const HEATMAP_CELL_DEG = 0.035
+const HEATMAP_LIMIT_PER_LAYER = 1200
+const STATIC_HEATMAP_FALLBACK_URL = `${import.meta.env.BASE_URL || '/'}hazard_heatmap_static.json`
 const MAP_MAX_WIDTH = 690
 const [, , BD_VIEWBOX_WIDTH, BD_VIEWBOX_HEIGHT] = BD_VIEWBOX.split(' ').map(Number)
 const QR_SCAN_BOX = {
@@ -37,6 +40,57 @@ function projectLatLonToSvg(lat, lon) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
+}
+
+function sampleSpatialPoints(points, limit) {
+  if (!Array.isArray(points) || points.length <= limit) return points || []
+
+  const ordered = [...points].sort((a, b) => {
+    if (a.lat !== b.lat) return a.lat - b.lat
+    return a.lon - b.lon
+  })
+  const step = ordered.length / limit
+
+  return Array.from({ length: limit }, (_, index) => ordered[Math.floor(index * step)])
+}
+
+function normalizeStaticHeatmapPayload(payload) {
+  const staticLayer = payload?.layers?.find((layer) => layer.id === HEATMAP_DEFAULT_LAYER)
+  if (!staticLayer?.points?.length) return null
+
+  return {
+    ...payload,
+    status: 'ok',
+    source: payload.source || 'frontend_static_cache',
+    cell_deg: HEATMAP_CELL_DEG,
+    limit_per_layer: HEATMAP_LIMIT_PER_LAYER,
+    layers: [
+      {
+        ...staticLayer,
+        points: sampleSpatialPoints(staticLayer.points, HEATMAP_LIMIT_PER_LAYER),
+      },
+    ],
+  }
+}
+
+async function loadStaticHeatmapFallback(signal) {
+  const response = await fetch(STATIC_HEATMAP_FALLBACK_URL, {
+    signal,
+    cache: 'force-cache',
+  })
+
+  if (!response.ok) {
+    throw new Error(`Static heatmap fallback failed with ${response.status}`)
+  }
+
+  const payload = await response.json()
+  const normalized = normalizeStaticHeatmapPayload(payload)
+
+  if (!normalized) {
+    throw new Error('Static heatmap fallback did not contain a usable layer')
+  }
+
+  return normalized
 }
 
 function heatColor(score) {
@@ -270,11 +324,29 @@ function Map() {
     let retryTimer
 
     async function loadHeatmap() {
+      const applyHeatmapPayload = (payload) => {
+        const layers = payload?.layers || []
+        setHeatmapData(payload || null)
+
+        if (layers.length > 0) {
+          const hasDefault = layers.some((layer) => layer.id === HEATMAP_DEFAULT_LAYER)
+          setActiveLayerId(hasDefault ? HEATMAP_DEFAULT_LAYER : layers[0].id)
+          return true
+        }
+
+        return false
+      }
+
+      const applyFallback = async () => {
+        const fallbackPayload = await loadStaticHeatmapFallback(controller.signal)
+        return applyHeatmapPayload(fallbackPayload)
+      }
+
       try {
         const response = await api.get('/v1/hazard/heatmap', {
           params: {
-            cell_deg: 0.035,
-            limit_per_layer: 1200,
+            cell_deg: HEATMAP_CELL_DEG,
+            limit_per_layer: HEATMAP_LIMIT_PER_LAYER,
             include_scenarios: false,
           },
           signal: controller.signal,
@@ -282,6 +354,20 @@ function Map() {
         })
 
         const layers = response.data?.layers || []
+
+        if (layers.length > 0) {
+          applyHeatmapPayload(response.data)
+          return
+        }
+
+        try {
+          const fallbackApplied = await applyFallback()
+          if (fallbackApplied) return
+        } catch (fallbackErr) {
+          if (fallbackErr.name === 'AbortError') return
+          console.error('[Map] Static heatmap fallback failed:', fallbackErr)
+        }
+
         setHeatmapData(response.data || null)
 
         if (response.data?.status === 'building' && layers.length === 0) {
@@ -290,15 +376,17 @@ function Map() {
           }, 4500)
           return
         }
-
-        if (layers.length > 0) {
-          const hasDefault = layers.some((layer) => layer.id === HEATMAP_DEFAULT_LAYER)
-          setActiveLayerId(hasDefault ? HEATMAP_DEFAULT_LAYER : layers[0].id)
-        }
       } catch (err) {
         if (err.name === 'CanceledError' || err.name === 'AbortError') return
 
         console.error('[Map] Failed to load hazard heatmap:', err)
+
+        try {
+          await applyFallback()
+        } catch (fallbackErr) {
+          if (fallbackErr.name === 'AbortError') return
+          console.error('[Map] Static heatmap fallback failed:', fallbackErr)
+        }
       }
     }
 
@@ -339,7 +427,14 @@ function Map() {
   const showHeatmap = isExpanded && projectedHeatPoints.length > 0 && scanComplete
 
   useEffect(() => {
-    if (!isExpanded || projectedHeatPoints.length === 0) return undefined
+    let fadeTimer
+
+    if (!isExpanded) {
+      setScanComplete(false)
+      setScanVisible(false)
+      setHoveredHeatPoint(null)
+      return undefined
+    }
 
     setScanComplete(false)
     setScanVisible(true)
@@ -347,13 +442,16 @@ function Map() {
 
     const timer = window.setTimeout(() => {
       setScanComplete(true)
-      window.setTimeout(() => {
+      fadeTimer = window.setTimeout(() => {
         setScanVisible(false)
       }, SCAN_FADE_MS)
     }, SCAN_DURATION_MS)
 
-    return () => window.clearTimeout(timer)
-  }, [isExpanded, projectedHeatPoints.length, activeLayerId])
+    return () => {
+      window.clearTimeout(timer)
+      if (fadeTimer) window.clearTimeout(fadeTimer)
+    }
+  }, [isExpanded])
 
   const handleExpand = () => {
     setIsExpanded(true)
