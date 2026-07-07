@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="Frontend/public/kompon-logo.svg" alt="Kompon Logo" width="80" />
-</p>
-
 <h1 align="center">Kompon</h1>
 
 <p align="center">
