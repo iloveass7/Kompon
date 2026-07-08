@@ -140,6 +140,20 @@ export default function InspectResults({ result, imagePreview, onBack, onReset }
               </motion.div>
             )}
 
+            {result.image_gate_overridden && (
+              <motion.div
+                className="flex items-start gap-3 border border-[#fed7aa] bg-[#fff7ed] px-4 py-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.45 }}
+              >
+                <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[#c2410c]" />
+                <p className={`m-0 text-[#7c2d12] ${type.bodySmall}`}>
+                  The first image check was uncertain, so Kompon continued because the crack model found building-damage evidence.
+                </p>
+              </motion.div>
+            )}
+
             {result.engineer_referral_recommended && (
               <motion.div
                 className="flex items-start gap-3 bg-[#fff7ed] border border-[#fed7aa] px-4 py-3"

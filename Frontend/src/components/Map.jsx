@@ -103,7 +103,12 @@ function heatColor(score) {
 
 function HeatmapLegend() {
   return (
-    <div className="pointer-events-none relative z-20 mb-4 w-full rounded-lg border border-[#d8d8d8] bg-white/95 px-4 py-3.5 shadow-[0_12px_32px_rgba(18,18,18,0.12)] backdrop-blur sm:absolute sm:left-auto sm:right-2 sm:top-[8%] sm:mb-0 sm:w-[250px] sm:px-3.5 sm:py-3 md:right-0 lg:right-[-2px] xl:right-[-5px]">
+    <motion.div
+      className="pointer-events-none relative z-20 mb-4 w-full rounded-lg border border-[#d8d8d8] bg-white/95 px-4 py-3.5 shadow-[0_12px_32px_rgba(18,18,18,0.12)] backdrop-blur sm:absolute sm:left-auto sm:right-2 sm:top-[8%] sm:mb-0 sm:w-[250px] sm:px-3.5 sm:py-3 md:right-0 lg:right-[-2px] xl:right-[-5px]"
+      initial={{ opacity: 0, y: -18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div className="mb-2.5 flex items-start justify-between gap-3">
         <div>
           <p className={`m-0 text-[#121212] ${type.label}`}>Ground response risk</p>
@@ -122,7 +127,7 @@ function HeatmapLegend() {
         <span>More stable</span>
         <span>More sensitive</span>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -208,7 +213,7 @@ function QrScanAnimation() {
         fill="#fafafa"
         fillOpacity="0.5"
       />
-      <g>
+      <g clipPath="url(#bd-scan-box-clip)">
         <rect
           x={QR_SCAN_BOX.x}
           y={QR_SCAN_BOX.y}
@@ -526,15 +531,7 @@ function Map() {
           layout
           transition={mapTransition}
         >
-          {showHeatmap && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: 0.2, ease: 'easeOut' }}
-            >
-              <HeatmapLegend />
-            </motion.div>
-          )}
+          {showHeatmap && <HeatmapLegend />}
 
           <svg
             className="h-auto w-full overflow-visible"
@@ -549,6 +546,15 @@ function Map() {
 
               <clipPath id="bd-heatmap-clip">
                 <path d={BD_OUTLINE} />
+              </clipPath>
+
+              <clipPath id="bd-scan-box-clip">
+                <rect
+                  x={QR_SCAN_BOX.x}
+                  y={QR_SCAN_BOX.y}
+                  width={QR_SCAN_BOX.width}
+                  height={QR_SCAN_BOX.height}
+                />
               </clipPath>
 
               <filter id="bd-heatmap-soften" x="-18%" y="-18%" width="136%" height="136%">
@@ -570,16 +576,6 @@ function Map() {
               fillOpacity={isExpanded && activeLayer ? '0.035' : '0.08'}
               pointerEvents="none"
             />
-
-            {scanVisible && (
-              <motion.g
-                initial={{ opacity: 0 }}
-                animate={{ opacity: scanComplete ? 0 : 1 }}
-                transition={{ duration: scanComplete ? 0.65 : 0.35, ease: 'easeOut' }}
-              >
-                <QrScanAnimation />
-              </motion.g>
-            )}
 
             {showHeatmap && (
               <motion.g
@@ -781,6 +777,16 @@ function Map() {
                 </g>
               )
             })}
+
+            {scanVisible && (
+              <motion.g
+                initial={{ opacity: 0 }}
+                animate={{ opacity: scanComplete ? 0 : 1 }}
+                transition={{ duration: scanComplete ? 0.65 : 0.35, ease: 'easeOut' }}
+              >
+                <QrScanAnimation />
+              </motion.g>
+            )}
           </svg>
 
           {showHeatmap && <HeatmapTooltip point={hoveredHeatPoint} />}
