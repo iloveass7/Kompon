@@ -89,6 +89,23 @@ def get_file_path(local_path: Path, env_repo_id: str, filename: str) -> str:
         raise
 
 
+def get_first_available_file_path(local_path: Path, env_repo_id: str, filenames: list[str]) -> str:
+    """Resolve the first available local/HF file from a list of compatible names."""
+    if local_path.exists() and local_path.stat().st_size > 500:
+        logger.info(f"Using local file: {local_path} ({local_path.stat().st_size / 1024 / 1024:.2f} MB)")
+        return str(local_path)
+
+    last_error = None
+    for filename in filenames:
+        try:
+            return get_file_path(Path("weights") / filename, env_repo_id, filename)
+        except Exception as exc:
+            last_error = exc
+            logger.warning(f"Could not resolve {filename}; trying next candidate.")
+
+    raise RuntimeError(f"Could not resolve any candidate file: {filenames}") from last_error
+
+
 # ═══════════════════════════════════════════════════════════════════
 # MODEL 0 — Image validity gate (MobileNetV3-Small, 3-class)
 # ═══════════════════════════════════════════════════════════════════
@@ -154,6 +171,8 @@ def run_gate(pil_img: Image.Image) -> dict:
             "reason": why,
             "class": None,
             "confidence": None,
+            "accepted_by": None,
+            "quality_ok": False,
             "message": (
                 "The image is too unclear. Please retake it in better light, "
                 "closer to the damage, and in focus."
@@ -168,12 +187,25 @@ def run_gate(pil_img: Image.Image) -> dict:
     conf = float(prob[idx])
     cls = gate_cfg["classes"][idx]
 
-    # Accept-on-uncertainty: never block a possibly-real crack
-    if conf < GATE_TAU or cls == "building_surface":
+    # Separate a true building accept from an uncertainty pass. The backend
+    # scores these differently so non-building images cannot produce a risk
+    # level just because the gate was unsure.
+    if cls == "building_surface":
         return {
             "decision": "accept",
             "class": cls,
             "confidence": round(conf, 4),
+            "accepted_by": "building_surface",
+            "quality_ok": True,
+        }
+
+    if conf < GATE_TAU:
+        return {
+            "decision": "accept",
+            "class": cls,
+            "confidence": round(conf, 4),
+            "accepted_by": "uncertainty",
+            "quality_ok": True,
         }
 
     if cls == "road_or_pavement":
@@ -182,6 +214,8 @@ def run_gate(pil_img: Image.Image) -> dict:
             "reason": "road",
             "class": cls,
             "confidence": round(conf, 4),
+            "accepted_by": None,
+            "quality_ok": True,
             "message": (
                 "A crack-like pattern was detected, but this appears to be road or "
                 "pavement damage. Kompon screens building cracks — please upload a "
@@ -194,6 +228,8 @@ def run_gate(pil_img: Image.Image) -> dict:
         "reason": "other",
         "class": cls,
         "confidence": round(conf, 4),
+        "accepted_by": None,
+        "quality_ok": True,
         "message": (
             "This doesn't appear to be a building surface. Please upload a clear photo "
             "of a wall, column, beam, slab, or visible building damage."
@@ -325,9 +361,21 @@ def run_crack_analysis(pil_img: Image.Image) -> dict:
 def load_scenario_model():
     global scenario_booster, scenario_feature_list, scenario_cat_cols
 
-    # Resolve paths (local first, then HF Hub)
-    model_filename = os.environ.get("HF_SCENARIO_MODEL_FILE", "scenario_model.txt")
-    model_path = get_file_path(SCENARIO_MODEL, "HF_MODEL_REPO_SCENARIO", model_filename)
+    # Resolve paths (local first, then HF Hub). The ground-failure repo has
+    # multiple serving generations; prefer the v4 regressor, but keep fallback
+    # names so older HF repos continue to boot.
+    model_candidates = [
+        os.environ.get("HF_SCENARIO_MODEL_FILE"),
+        "scenario_model_v4_regressor.txt",
+        "scenario_model_v3_regressor.txt",
+        "scenario_model_v2.txt",
+        "scenario_model.txt",
+    ]
+    model_path = get_first_available_file_path(
+        SCENARIO_MODEL,
+        "HF_MODEL_REPO_SCENARIO",
+        [name for name in model_candidates if name],
+    )
     features_path = get_file_path(SCENARIO_FEATURES, "HF_MODEL_REPO_SCENARIO", "scenario_feature_list.json")
     cat_cols_path = get_file_path(SCENARIO_CAT_COLS, "HF_MODEL_REPO_SCENARIO", "scenario_categorical_cols.json")
 

@@ -105,6 +105,14 @@ async function loadScenarioGrid(filePath, eventId) {
         mmi_filled: parseFloat(row.mmi_filled ?? row.mmi) || 0,
         ground_susceptibility_score: parseFloat(row.ground_susceptibility_score) || null,
         vs30: parseFloat(row.vs30) || null,
+        elevation_m: parseFloat(row.elevation_m) || null,
+        slope_deg: parseFloat(row.slope_deg) || null,
+        dist_water_m: parseFloat(row.dist_water_m) || null,
+        water_occurrence_pct: parseFloat(row.water_occurrence_pct) || null,
+        geology_class: row.geology_class || null,
+        hand_m: parseFloat(row.hand_m) || null,
+        water_max_extent: parseFloat(row.water_max_extent) || null,
+        dynamic_label_name: row.dynamic_label_name || null,
       };
     })
     .filter(Boolean);

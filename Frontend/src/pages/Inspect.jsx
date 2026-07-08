@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   Check, Upload, Loader2, AlertTriangle, LocateFixed,
   Building2, Layers, DoorOpen, Hammer, Landmark, Wrench, MapPin, ImageUp, ArrowLeft,
-  Scan,
+  Scan, Camera,
 } from 'lucide-react'
 import { api } from '../config/api.js'
 import InspectResults from '../components/InspectResults.jsx'
@@ -12,7 +12,7 @@ import { type } from '../lib/typography.js'
 
 /* ── Step definitions ── */
 const STEPS = [
-  { title: 'Upload a building photo', body: 'Take or upload a clear photo of a building wall, column, or structural element for crack analysis.' },
+  { title: 'Capture a building photo', body: 'Take a clear photo of a wall, column, beam joint, or other building surface for crack analysis.' },
   { title: 'Building questionnaire', body: 'Answer a few quick questions about the building to improve the risk assessment accuracy.' },
   { title: 'Location (optional)', body: 'Share your location for site hazard and soil analysis. This step is optional but improves accuracy.' },
   { title: 'Analyzing your building', body: 'Our ML models are analyzing the image and computing a risk score. This may take up to 30 seconds.' },
@@ -77,7 +77,7 @@ const STEP_DETAILS = [
   {
     title: 'Photo intake',
     items: [
-      'The uploaded photo is kept at a fixed preview size so the inspection form stays stable.',
+      'The captured photo is kept at a fixed preview size so the inspection form stays stable.',
       'Accepted files are JPEG, PNG, and WebP images under 8MB.',
       'Use a clear view of a wall, column, beam joint, or other building surface.',
     ],
@@ -189,7 +189,6 @@ function Inspect() {
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
   const [rejected, setRejected] = useState(null)
-  const [bypassGate, setBypassGate] = useState(false)
   const fileRef = useRef(null)
   const msgInterval = useRef(null)
 
@@ -205,7 +204,7 @@ function Inspect() {
   const reset = () => {
     setStep(0); setImageFile(null); setImagePreview(null)
     setQuestionnaire({ ...DEFAULT_Q }); setQuestionnaireSlide(0); setScenarioEventId(''); setUserPos(null); setGeoStatus('idle'); setDragActive(false)
-    setLoading(false); setError(null); setResult(null); setRejected(null); setBypassGate(false)
+    setLoading(false); setError(null); setResult(null); setRejected(null)
     stopLoadingTicker()
   }
 
@@ -215,7 +214,7 @@ function Inspect() {
     const valid = ['image/jpeg', 'image/png', 'image/webp']
     if (!valid.includes(file.type)) { setError('Please upload a JPEG, PNG, or WebP image.'); return }
     if (file.size > 8 * 1024 * 1024) { setError('Image must be under 8MB.'); return }
-    setError(null); setRejected(null); setResult(null); setBypassGate(false); setImageFile(file)
+    setError(null); setRejected(null); setResult(null); setImageFile(file)
     const reader = new FileReader()
     reader.onload = (e) => setImagePreview(e.target.result)
     reader.readAsDataURL(file)
@@ -249,9 +248,8 @@ function Inspect() {
   }, [])
 
   /* Submit to backend */
-  const submitAssessment = useCallback(async (options = {}) => {
+  const submitAssessment = useCallback(async () => {
     if (!imageFile) return
-    const shouldBypassGate = options.bypassGate ?? bypassGate
     setStep(3); setLoading(true); setError(null); setRejected(null)
     let msgIdx = 0
     setLoadingMsg(LOADING_MSGS[0])
@@ -264,7 +262,6 @@ function Inspect() {
       const form = new FormData()
       form.append('image', imageFile)
       form.append('questionnaire', JSON.stringify(questionnaire))
-      if (shouldBypassGate) form.append('bypass_gate', 'true')
       if (userPos) { form.append('lat', userPos[0]); form.append('lon', userPos[1]) }
       if (userPos && scenarioEventId) form.append('scenario_event_id', scenarioEventId)
 
@@ -276,7 +273,7 @@ function Inspect() {
       stopLoadingTicker()
 
       if (res.data.rejected) {
-        setRejected(res.data); setBypassGate(false); setStep(0); setLoading(false); return
+        setRejected(res.data); setStep(0); setLoading(false); return
       }
       setResult(res.data); setStep(4); setLoading(false)
     } catch (err) {
@@ -295,13 +292,7 @@ function Inspect() {
             : 'Assessment failed. Please try again.'
       setError(msg); setStep(2); setLoading(false)
     }
-  }, [bypassGate, imageFile, questionnaire, scenarioEventId, stopLoadingTicker, userPos])
-
-  const bypassImageGate = () => {
-    setRejected(null)
-    setBypassGate(true)
-    submitAssessment({ bypassGate: true })
-  }
+  }, [imageFile, questionnaire, scenarioEventId, stopLoadingTicker, userPos])
 
   /* Navigation */
   const canNext = step === 0 ? !!imageFile : true
@@ -330,13 +321,13 @@ function Inspect() {
         <motion.div className="mx-auto max-w-[760px] text-center lg:col-span-2" variants={sectionItem}>
           <h2 className={type.sectionTitle}>Start your inspection request</h2>
           <p className={`mx-auto mt-4 max-w-[620px] text-[#5e5e5e] ${type.body}`}>
-            Upload a building photo and answer a few questions to receive an AI-powered structural risk assessment.
+            Capture a building photo and answer a few questions to receive an AI-powered structural risk assessment.
           </p>
         </motion.div>
 
         {/* Left: form */}
         <motion.div className={`mx-auto w-full ${step === 4 ? 'max-w-none lg:col-span-2' : 'max-w-[520px] lg:flex lg:flex-col'}`} variants={sectionItem}>
-          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="hidden"
             onChange={(e) => { handleFile(e.target.files[0]); e.target.value = '' }} />
           <StepIndicator active={step === 4 && result ? visibleSteps : step} total={visibleSteps} />
           <h2 className={type.formTitle}>{activeStep.title}</h2>
@@ -351,12 +342,8 @@ function Inspect() {
                 <p className={`m-0 text-[#7c2d12] ${type.bodySmall}`}>{rejected.rejection_reason}</p>
               </div>
               <div className="flex flex-wrap gap-3 pl-0 sm:pl-8">
-                <motion.button className={darkBtn} type="button" onClick={bypassImageGate} disabled={loading} whileTap={buttonTap}>
-                  {loading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
-                  Bypass and analyze crack
-                </motion.button>
                 <motion.button className={outlineBtn} type="button" onClick={() => fileRef.current?.click()} whileTap={{ scale: 0.98 }}>
-                  Replace image
+                  Capture another photo
                 </motion.button>
               </div>
             </motion.div>
@@ -381,9 +368,9 @@ function Inspect() {
                   <StepInfoPanel step={step} className="h-full" />
                   {!imagePreview && (
                     <div className="border border-[#c8c8c8] bg-[#f4f4f4] p-5">
-                      <p className={`m-0 text-[#333] ${type.label}`}>Use the upload panel on the right</p>
+                      <p className={`m-0 text-[#333] ${type.label}`}>Use the capture panel on the right</p>
                       <p className={`m-0 mt-2 text-[#777] ${type.bodySmall}`}>
-                        Click or drag your building image into the right panel. This keeps one visible preview surface through the entire inspection.
+                        Capture a building image from your phone or choose an existing JPEG, PNG, or WebP photo.
                       </p>
                     </div>
                   )}
@@ -583,7 +570,7 @@ function Inspect() {
                   whileTap={{ scale: 0.98 }}
                 >
                   <ImageUp size={15} />
-                  Replace
+                  Retake
                 </motion.button>
               )}
             </div>
@@ -603,11 +590,11 @@ function Inspect() {
                 whileHover={{ y: -3 }}
                 transition={{ type: 'spring', stiffness: 260, damping: 18 }}
               >
-                <ImageUp size={42} strokeWidth={2.2} />
+                <Camera size={42} strokeWidth={2.2} />
               </motion.span>
-              <p className={`m-0 text-[#333] ${type.label}`}>Attach a building photo</p>
+              <p className={`m-0 text-[#333] ${type.label}`}>Capture a building crack photo</p>
               <p className={`m-0 max-w-[280px] !text-center text-[#888] ${type.meta}`}>
-                The preview will blur during ML analysis while the severity score is calculated.
+                Use your phone camera on site, or choose an existing photo on desktop.
               </p>
             </button>
           )}
