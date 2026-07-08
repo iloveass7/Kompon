@@ -8,6 +8,7 @@ import Home from './pages/Home.jsx'
 import Alerts from './pages/Alerts.jsx'
 import Inspect from './pages/Inspect.jsx'
 import Relief from './pages/Relief.jsx'
+import FAQSection from './components/FAQSection.jsx'
 
 function App() {
   useEffect(() => {
@@ -26,6 +27,7 @@ function App() {
         <Alerts />
         <Inspect />
         <Relief />
+        <FAQSection />
       </main>
       <Footer />
       <BackToTop />

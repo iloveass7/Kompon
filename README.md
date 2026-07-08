@@ -1162,7 +1162,8 @@ Built with 💪 for the earthquake safety of Bangladesh.
 |------|------|
 | **Syed Abir Hossain** | ML Engineering, Backend Development, DevOps |
 | **Shuhrid Abrar** | Frontend Development, UI/UX Design |
-| **MD Tanjir Rahman** | Data Engineering, Research |
+| **MD Tanjir Rahman** | Data Engineering, Research, Documentation |
+
 
 ---
 
