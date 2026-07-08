@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   Check, Upload, Loader2, AlertTriangle, LocateFixed,
   Building2, Layers, DoorOpen, Hammer, Landmark, Wrench, MapPin, ImageUp, ArrowLeft,
-  Scan,
+  Scan, Camera,
 } from 'lucide-react'
 import { api } from '../config/api.js'
 import InspectResults from '../components/InspectResults.jsx'
@@ -21,30 +21,44 @@ const STEPS = [
 
 /* ── Questionnaire options ── */
 const Q_FIELDS = [
-  { key: 'building_age', label: 'Building age', icon: Building2, options: [
-    { value: '<10y', label: 'Under 10 years' }, { value: '10-30y', label: '10–30 years' },
-    { value: '>30y', label: 'Over 30 years' }, { value: 'unknown', label: 'Unknown' },
-  ]},
-  { key: 'stories', label: 'Number of stories', icon: Layers, options: [
-    { value: '1-2', label: '1–2' }, { value: '3-5', label: '3–5' }, { value: '6+', label: '6+' },
-  ]},
-  { key: 'soft_story', label: 'Soft story (open ground floor)?', icon: DoorOpen, options: [
-    { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }, { value: 'unsure', label: 'Unsure' },
-  ]},
-  { key: 'structural_material', label: 'Structural material', icon: Hammer, options: [
-    { value: 'rc_frame', label: 'RC Frame' }, { value: 'load_bearing_masonry', label: 'Masonry' },
-    { value: 'informal_other', label: 'Informal / Other' },
-  ]},
-  { key: 'foundation_settlement', label: 'Foundation settlement signs?', icon: Landmark, options: [
-    { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }, { value: 'unsure', label: 'Unsure' },
-  ]},
-  { key: 'prior_damage', label: 'Prior earthquake damage?', icon: Wrench, options: [
-    { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }, { value: 'unsure', label: 'Unsure' },
-  ]},
-  { key: 'crack_location', label: 'Where are the cracks?', icon: MapPin, options: [
-    { value: 'column_beam_joint', label: 'Column/Beam joint' }, { value: 'load_bearing_wall', label: 'Load-bearing wall' },
-    { value: 'plaster_partition', label: 'Plaster / Partition' }, { value: 'unsure', label: 'Unsure' },
-  ]},
+  {
+    key: 'building_age', label: 'Building age', icon: Building2, options: [
+      { value: '<10y', label: 'Under 10 years' }, { value: '10-30y', label: '10–30 years' },
+      { value: '>30y', label: 'Over 30 years' }, { value: 'unknown', label: 'Unknown' },
+    ]
+  },
+  {
+    key: 'stories', label: 'Number of stories', icon: Layers, options: [
+      { value: '1-2', label: '1–2' }, { value: '3-5', label: '3–5' }, { value: '6+', label: '6+' },
+    ]
+  },
+  {
+    key: 'soft_story', label: 'Soft story (open ground floor)?', icon: DoorOpen, options: [
+      { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }, { value: 'unsure', label: 'Unsure' },
+    ]
+  },
+  {
+    key: 'structural_material', label: 'Structural material', icon: Hammer, options: [
+      { value: 'rc_frame', label: 'RC Frame' }, { value: 'load_bearing_masonry', label: 'Masonry' },
+      { value: 'informal_other', label: 'Informal / Other' },
+    ]
+  },
+  {
+    key: 'foundation_settlement', label: 'Foundation settlement signs?', icon: Landmark, options: [
+      { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }, { value: 'unsure', label: 'Unsure' },
+    ]
+  },
+  {
+    key: 'prior_damage', label: 'Prior earthquake damage?', icon: Wrench, options: [
+      { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }, { value: 'unsure', label: 'Unsure' },
+    ]
+  },
+  {
+    key: 'crack_location', label: 'Where are the cracks?', icon: MapPin, options: [
+      { value: 'column_beam_joint', label: 'Column/Beam joint' }, { value: 'load_bearing_wall', label: 'Load-bearing wall' },
+      { value: 'plaster_partition', label: 'Plaster / Partition' }, { value: 'unsure', label: 'Unsure' },
+    ]
+  },
 ]
 
 const DEFAULT_Q = { building_age: 'unknown', stories: '1-2', soft_story: 'unsure', structural_material: 'load_bearing_masonry', foundation_settlement: 'unsure', prior_damage: 'unsure', crack_location: 'unsure' }
@@ -72,6 +86,16 @@ const LOADING_MSGS = [
   'Combining questionnaire and location evidence...',
   'Calculating final severity score...',
 ]
+
+const isLikelyMobileBrowser = () => {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') return false
+  const ua = navigator.userAgent || ''
+  const uaDataMobile = navigator.userAgentData?.mobile
+  const hasMobileUserAgent = uaDataMobile === true || /Android|iPhone|iPad|iPod|IEMobile|Mobile/i.test(ua)
+  const hasTouchInput = navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches
+  const hasMobileViewport = window.matchMedia('(max-width: 820px)').matches
+  return hasMobileUserAgent || (hasTouchInput && hasMobileViewport)
+}
 
 const STEP_DETAILS = [
   {
@@ -143,11 +167,10 @@ function StepIndicator({ active, total }) {
         return (
           <div className="flex flex-1 items-center last:flex-none" key={i}>
             <motion.span
-              className={`relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border text-sm font-bold sm:h-9 sm:w-9 md:h-10 md:w-10 ${
-                done ? 'border-[#121212] bg-[#121212] text-white'
+              className={`relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border text-sm font-bold sm:h-9 sm:w-9 md:h-10 md:w-10 ${done ? 'border-[#121212] bg-[#121212] text-white'
                 : cur ? 'border-[#ff5330] bg-[#fafafa] text-[#ff5330]'
-                : 'border-[#c8c8c8] bg-[#fafafa] text-[#5e5e5e]'
-              }`}
+                  : 'border-[#c8c8c8] bg-[#fafafa] text-[#5e5e5e]'
+                }`}
               animate={{ scale: cur ? 1.1 : 1 }}
               transition={{ type: 'spring', stiffness: 260, damping: 18 }}
             >
@@ -190,7 +213,9 @@ function Inspect() {
   const [result, setResult] = useState(null)
   const [rejected, setRejected] = useState(null)
   const [bypassGate, setBypassGate] = useState(false)
-  const fileRef = useRef(null)
+  const [isMobileUpload, setIsMobileUpload] = useState(() => isLikelyMobileBrowser())
+  const galleryRef = useRef(null)
+  const cameraRef = useRef(null)
   const msgInterval = useRef(null)
 
   const stopLoadingTicker = useCallback(() => {
@@ -201,6 +226,16 @@ function Inspect() {
   useEffect(() => {
     return () => stopLoadingTicker()
   }, [stopLoadingTicker])
+
+  useEffect(() => {
+    const updateUploadMode = () => setIsMobileUpload(isLikelyMobileBrowser())
+    window.addEventListener('resize', updateUploadMode)
+    window.visualViewport?.addEventListener('resize', updateUploadMode)
+    return () => {
+      window.removeEventListener('resize', updateUploadMode)
+      window.visualViewport?.removeEventListener('resize', updateUploadMode)
+    }
+  }, [])
 
   const reset = () => {
     setStep(0); setImageFile(null); setImagePreview(null)
@@ -303,6 +338,9 @@ function Inspect() {
     submitAssessment({ bypassGate: true })
   }
 
+  const openGalleryPicker = () => galleryRef.current?.click()
+  const openCameraPicker = () => cameraRef.current?.click()
+
   /* Navigation */
   const canNext = step === 0 ? !!imageFile : true
   const goBack = () => {
@@ -336,7 +374,9 @@ function Inspect() {
 
         {/* Left: form */}
         <motion.div className={`mx-auto w-full ${step === 4 ? 'max-w-none lg:col-span-2' : 'max-w-[520px] lg:flex lg:flex-col'}`} variants={sectionItem}>
-          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+          <input ref={galleryRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+            onChange={(e) => { handleFile(e.target.files[0]); e.target.value = '' }} />
+          <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
             onChange={(e) => { handleFile(e.target.files[0]); e.target.value = '' }} />
           <StepIndicator active={step === 4 && result ? visibleSteps : step} total={visibleSteps} />
           <h2 className={type.formTitle}>{activeStep.title}</h2>
@@ -355,7 +395,7 @@ function Inspect() {
                   {loading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
                   Bypass and analyze crack
                 </motion.button>
-                <motion.button className={outlineBtn} type="button" onClick={() => fileRef.current?.click()} whileTap={{ scale: 0.98 }}>
+                <motion.button className={outlineBtn} type="button" onClick={openGalleryPicker} whileTap={{ scale: 0.98 }}>
                   Replace image
                 </motion.button>
               </div>
@@ -372,155 +412,154 @@ function Inspect() {
           )}
 
           <div className={step === 4 ? '' : 'lg:flex-1'}>
-          <AnimatePresence mode="wait">
-            <motion.div className={step === 4 ? '' : 'h-full'} key={step} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -18 }} transition={{ duration: 0.25 }}>
+            <AnimatePresence mode="wait">
+              <motion.div className={step === 4 ? '' : 'h-full'} key={step} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -18 }} transition={{ duration: 0.25 }}>
 
-              {/* Step 0: Upload */}
-              {step === 0 && (
-                <div className="grid h-full gap-[18px]">
-                  <StepInfoPanel step={step} className="h-full" />
-                  {!imagePreview && (
-                    <div className="border border-[#c8c8c8] bg-[#f4f4f4] p-5">
-                      <p className={`m-0 text-[#333] ${type.label}`}>Use the upload panel on the right</p>
-                      <p className={`m-0 mt-2 text-[#777] ${type.bodySmall}`}>
-                        Click or drag your building image into the right panel. This keeps one visible preview surface through the entire inspection.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Step 1: Questionnaire */}
-              {step === 1 && (
-                <div className="grid h-full gap-5">
-                  <div className="flex items-center justify-between border border-[#c8c8c8] bg-[#fafafa] p-4">
-                    <div>
-                      <p className={`m-0 text-[#ff5330] ${type.overline}`}>Part {questionnaireSlide + 1} of {Q_SLIDES.length}</p>
-                      <h3 className={`m-0 mt-2 text-[#121212] ${type.cardTitle}`}>{Q_SLIDES[questionnaireSlide].title}</h3>
-                    </div>
-                    <div className="flex gap-2" aria-hidden="true">
-                      {Q_SLIDES.map((slide, index) => (
-                        <span
-                          key={slide.title}
-                          className={`h-2.5 w-8 rounded-full ${index === questionnaireSlide ? 'bg-[#ff5330]' : 'bg-[#d9d9d9]'}`}
-                        />
-                      ))}
-                    </div>
+                {/* Step 0: Upload */}
+                {step === 0 && (
+                  <div className="grid h-full gap-[18px]">
+                    <StepInfoPanel step={step} className="h-full" />
+                    {!imagePreview && (
+                      <div className="border border-[#c8c8c8] bg-[#f4f4f4] p-5">
+                        <p className={`m-0 text-[#333] ${type.label}`}>Use the upload panel on the right</p>
+                        <p className={`m-0 mt-2 text-[#777] ${type.bodySmall}`}>
+                          Click or drag your building image into the right panel. This keeps one visible preview surface through the entire inspection.
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  <div className="grid gap-4">
-                  {Q_SLIDES[questionnaireSlide].fields.map(({ key, label, icon: Icon, options }) => (
-                    <div key={key} className="grid gap-2">
-                      <span className={`flex items-center gap-2 text-[#333] ${type.label}`}>
-                        <Icon size={15} className="text-[#ff5330]" /> {label}
-                      </span>
-                      <div className="grid auto-rows-fr gap-2 sm:grid-cols-2">
-                        {options.map((opt) => (
-                          <motion.button key={opt.value} type="button"
-                            className={`${btnBase} h-full min-h-11 whitespace-normal px-3.5 text-center text-[13px] ${
-                              questionnaire[key] === opt.value
-                                ? 'border-[#ff5330] bg-[#ff5330] text-white'
-                                : 'border-[#c8c8c8] bg-[#fafafa] text-[#333]'
-                            }`}
-                            onClick={() => updateQ(key, opt.value)}
-                            whileTap={{ scale: 0.97 }}
-                          >
-                            {opt.label}
-                          </motion.button>
+                )}
+
+                {/* Step 1: Questionnaire */}
+                {step === 1 && (
+                  <div className="grid h-full gap-5">
+                    <div className="flex items-center justify-between border border-[#c8c8c8] bg-[#fafafa] p-4">
+                      <div>
+                        <p className={`m-0 text-[#ff5330] ${type.overline}`}>Part {questionnaireSlide + 1} of {Q_SLIDES.length}</p>
+                        <h3 className={`m-0 mt-2 text-[#121212] ${type.cardTitle}`}>{Q_SLIDES[questionnaireSlide].title}</h3>
+                      </div>
+                      <div className="flex gap-2" aria-hidden="true">
+                        {Q_SLIDES.map((slide, index) => (
+                          <span
+                            key={slide.title}
+                            className={`h-2.5 w-8 rounded-full ${index === questionnaireSlide ? 'bg-[#ff5330]' : 'bg-[#d9d9d9]'}`}
+                          />
                         ))}
                       </div>
                     </div>
-                  ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Location */}
-              {step === 2 && (
-                <div className="grid h-full gap-[18px]">
-                  <div className="flex flex-col items-center gap-4 border border-[#c8c8c8] bg-[#f4f4f4] p-6 text-center">
-                    {geoStatus === 'granted' && userPos ? (
-                      <>
-                        <div className="grid h-14 w-14 place-items-center rounded-full bg-[#f0fdf4]">
-                          <Check size={24} className="text-[#16a34a]" />
+                    <div className="grid gap-4">
+                      {Q_SLIDES[questionnaireSlide].fields.map(({ key, label, icon: Icon, options }) => (
+                        <div key={key} className="grid gap-2">
+                          <span className={`flex items-center gap-2 text-[#333] ${type.label}`}>
+                            <Icon size={15} className="text-[#ff5330]" /> {label}
+                          </span>
+                          <div className="grid auto-rows-fr gap-2 sm:grid-cols-2">
+                            {options.map((opt) => (
+                              <motion.button key={opt.value} type="button"
+                                className={`${btnBase} h-full min-h-11 whitespace-normal px-3.5 text-center text-[13px] ${questionnaire[key] === opt.value
+                                  ? 'border-[#ff5330] bg-[#ff5330] text-white'
+                                  : 'border-[#c8c8c8] bg-[#fafafa] text-[#333]'
+                                  }`}
+                                onClick={() => updateQ(key, opt.value)}
+                                whileTap={{ scale: 0.97 }}
+                              >
+                                {opt.label}
+                              </motion.button>
+                            ))}
+                          </div>
                         </div>
-                        <p className={`m-0 text-[#333] ${type.label}`}>Location captured</p>
-                        <p className={`m-0 text-[#888] ${type.meta}`}>
-                          {userPos[0].toFixed(4)}, {userPos[1].toFixed(4)}
-                        </p>
-                      </>
-                    ) : geoStatus === 'locating' ? (
-                      <>
-                        <Loader2 size={28} className="animate-spin text-[#ff5330]" />
-                        <p className={`m-0 text-[#555] ${type.label}`}>Getting your location…</p>
-                      </>
-                    ) : (
-                      <>
-                        <div className="grid h-14 w-14 place-items-center rounded-full bg-[#fff0ed]">
-                          <LocateFixed size={24} className="text-[#ff5330]" />
-                        </div>
-                        <p className={`m-0 text-[#333] ${type.label}`}>
-                          {geoStatus === 'denied' ? 'Location access denied' : 'Enable location for better results'}
-                        </p>
-                        <motion.button className={darkBtn} type="button" onClick={getLocation} whileTap={buttonTap}>
-                          <LocateFixed size={15} />
-                          {geoStatus === 'denied' ? 'Try Again' : 'Share Location'}
-                        </motion.button>
-                      </>
-                    )}
-                  </div>
-                  <p className={`m-0 text-center text-[#999] ${type.legal}`}>
-                    Location is used for site hazard analysis only and is never stored.
-                  </p>
-                  <div className="grid gap-2 border border-[#c8c8c8] bg-[#fafafa] p-4">
-                    <span className={`flex items-center gap-2 text-[#333] ${type.label}`}>
-                      <MapPin size={15} className="text-[#ff5330]" />
-                      Scenario shaking model
-                    </span>
-                    <select
-                      className={`min-h-11 w-full border border-[#c8c8c8] bg-white px-3 text-[#121212] outline-none focus:border-[#ff5330] disabled:cursor-not-allowed disabled:bg-[#eee] disabled:text-[#888] ${type.bodySmall}`}
-                      value={scenarioEventId}
-                      onChange={(event) => setScenarioEventId(event.target.value)}
-                      disabled={!userPos}
-                    >
-                      {SCENARIO_EVENTS.map((event) => (
-                        <option key={event.value || 'none'} value={event.value}>
-                          {event.label}
-                        </option>
                       ))}
-                    </select>
-                    <p className={`m-0 text-[#888] ${type.legal}`}>
-                      Optional. Requires location and adds scenario shaking to the final score when backend scenario data exists nearby.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Processing — left side shows pipeline info, right side blurs */}
-              {step === 3 && (
-                <div className="grid h-full gap-5">
-                  <div className="flex flex-col items-center gap-4 border border-[#fed7aa] bg-[#fff7ed] p-8 text-center">
-                    <div className="grid h-16 w-16 place-items-center rounded-full bg-[#fff0ed]">
-                      <Scan size={28} className="text-[#ff5330]" />
                     </div>
-                    <h3 className={`m-0 text-[#121212] ${type.cardTitle}`}>Analysis in progress</h3>
-                    <AnimatePresence mode="wait">
-                      <motion.p key={loadingMsg} className={`m-0 max-w-[340px] text-[#333] ${type.bodySmall}`}
-                        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.3 }}>
-                        {loadingMsg}
-                      </motion.p>
-                    </AnimatePresence>
-                    <span className={`mt-1 text-[#777] ${type.meta}`}>This may take up to 30 seconds</span>
                   </div>
-                  <StepInfoPanel step={step} />
-                </div>
-              )}
+                )}
 
-              {/* Step 4: Results */}
-              {step === 4 && result && (
-                <InspectResults result={result} imagePreview={imagePreview} onBack={() => setStep(2)} onReset={reset} />
-              )}
-            </motion.div>
-          </AnimatePresence>
+                {/* Step 2: Location */}
+                {step === 2 && (
+                  <div className="grid h-full gap-[18px]">
+                    <div className="flex flex-col items-center gap-4 border border-[#c8c8c8] bg-[#f4f4f4] p-6 text-center">
+                      {geoStatus === 'granted' && userPos ? (
+                        <>
+                          <div className="grid h-14 w-14 place-items-center rounded-full bg-[#f0fdf4]">
+                            <Check size={24} className="text-[#16a34a]" />
+                          </div>
+                          <p className={`m-0 text-[#333] ${type.label}`}>Location captured</p>
+                          <p className={`m-0 text-[#888] ${type.meta}`}>
+                            {userPos[0].toFixed(4)}, {userPos[1].toFixed(4)}
+                          </p>
+                        </>
+                      ) : geoStatus === 'locating' ? (
+                        <>
+                          <Loader2 size={28} className="animate-spin text-[#ff5330]" />
+                          <p className={`m-0 text-[#555] ${type.label}`}>Getting your location…</p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="grid h-14 w-14 place-items-center rounded-full bg-[#fff0ed]">
+                            <LocateFixed size={24} className="text-[#ff5330]" />
+                          </div>
+                          <p className={`m-0 text-[#333] ${type.label}`}>
+                            {geoStatus === 'denied' ? 'Location access denied' : 'Enable location for better results'}
+                          </p>
+                          <motion.button className={darkBtn} type="button" onClick={getLocation} whileTap={buttonTap}>
+                            <LocateFixed size={15} />
+                            {geoStatus === 'denied' ? 'Try Again' : 'Share Location'}
+                          </motion.button>
+                        </>
+                      )}
+                    </div>
+                    <p className={`m-0 text-center text-[#999] ${type.legal}`}>
+                      Location is used for site hazard analysis only and is never stored.
+                    </p>
+                    <div className="grid gap-2 border border-[#c8c8c8] bg-[#fafafa] p-4">
+                      <span className={`flex items-center gap-2 text-[#333] ${type.label}`}>
+                        <MapPin size={15} className="text-[#ff5330]" />
+                        Scenario shaking model
+                      </span>
+                      <select
+                        className={`min-h-11 w-full border border-[#c8c8c8] bg-white px-3 text-[#121212] outline-none focus:border-[#ff5330] disabled:cursor-not-allowed disabled:bg-[#eee] disabled:text-[#888] ${type.bodySmall}`}
+                        value={scenarioEventId}
+                        onChange={(event) => setScenarioEventId(event.target.value)}
+                        disabled={!userPos}
+                      >
+                        {SCENARIO_EVENTS.map((event) => (
+                          <option key={event.value || 'none'} value={event.value}>
+                            {event.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p className={`m-0 text-[#888] ${type.legal}`}>
+                        Optional. Requires location and adds scenario shaking to the final score when backend scenario data exists nearby.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3: Processing — left side shows pipeline info, right side blurs */}
+                {step === 3 && (
+                  <div className="grid h-full gap-5">
+                    <div className="flex flex-col items-center gap-4 border border-[#fed7aa] bg-[#fff7ed] p-8 text-center">
+                      <div className="grid h-16 w-16 place-items-center rounded-full bg-[#fff0ed]">
+                        <Scan size={28} className="text-[#ff5330]" />
+                      </div>
+                      <h3 className={`m-0 text-[#121212] ${type.cardTitle}`}>Analysis in progress</h3>
+                      <AnimatePresence mode="wait">
+                        <motion.p key={loadingMsg} className={`m-0 max-w-[340px] text-[#333] ${type.bodySmall}`}
+                          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.3 }}>
+                          {loadingMsg}
+                        </motion.p>
+                      </AnimatePresence>
+                      <span className={`mt-1 text-[#777] ${type.meta}`}>This may take up to 30 seconds</span>
+                    </div>
+                    <StepInfoPanel step={step} />
+                  </div>
+                )}
+
+                {/* Step 4: Results */}
+                {step === 4 && result && (
+                  <InspectResults result={result} imagePreview={imagePreview} onBack={() => setStep(2)} onReset={reset} />
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* Navigation buttons */}
@@ -543,75 +582,105 @@ function Inspect() {
 
         {/* Right: image preview panel */}
         {step !== 4 && (
-        <motion.div
-          className="mx-auto min-h-[300px] w-full max-w-[630px] overflow-hidden rounded-lg sm:min-h-[380px] md:min-h-[430px] lg:h-full lg:max-w-none"
-          variants={sectionItem}
-        >
-          {imagePreview ? (
-            <div className="relative h-full bg-[#ececec]">
-              <img
-                src={imagePreview}
-                alt="Building preview"
-                className={`h-full w-full object-contain transition-all duration-700 ${
-                  loading ? 'blur-[8px] brightness-[0.4]' : ''
-                }`}
-              />
-              {loading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                  <Loader2 size={48} className="animate-spin text-[#ff5330]" />
-                  <motion.p key={loadingMsg + '-right'} className={`m-0 text-center text-white ${type.label}`}
-                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                    {loadingMsg}
-                  </motion.p>
-                </div>
-              )}
-              {result && !loading && (
-                <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent p-6">
-                  <div>
-                    <p className="m-0 text-sm font-bold text-white/70">Risk Assessment</p>
-                    <p className="m-0 text-[28px] font-extrabold text-white">
-                      {result.final_tier} — {Math.round(result.final_score)}/100
-                    </p>
+          <motion.div
+            className="mx-auto min-h-[300px] w-full max-w-[630px] overflow-hidden rounded-lg sm:min-h-[380px] md:min-h-[430px] lg:h-full lg:max-w-none"
+            variants={sectionItem}
+          >
+            {imagePreview ? (
+              <div className="relative h-full bg-[#ececec]">
+                <img
+                  src={imagePreview}
+                  alt="Building preview"
+                  className={`h-full w-full object-contain transition-all duration-700 ${loading ? 'blur-[8px] brightness-[0.4]' : ''
+                    }`}
+                />
+                {loading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                    <Loader2 size={48} className="animate-spin text-[#ff5330]" />
+                    <motion.p key={loadingMsg + '-right'} className={`m-0 text-center text-white ${type.label}`}
+                      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+                      {loadingMsg}
+                    </motion.p>
                   </div>
-                </div>
-              )}
-              {!loading && (
-                <motion.button
-                  type="button"
-                  className={`absolute right-4 top-4 inline-flex min-h-10 items-center justify-center gap-2 border border-[#222] bg-[#fafafa] px-4 text-[#121212] shadow-sm ${type.button}`}
-                  onClick={() => fileRef.current?.click()}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <ImageUp size={15} />
-                  Replace
-                </motion.button>
-              )}
-            </div>
-          ) : (
-            <button
-              type="button"
-              className={`flex h-full min-h-[300px] w-full cursor-pointer flex-col items-center justify-center gap-3 border border-dashed bg-[#ececec] p-8 text-center transition-colors hover:border-[#ff5330] hover:bg-[#fff6f4] sm:min-h-[380px] md:min-h-[430px] lg:min-h-full ${
-                dragActive ? 'border-[#ff5330] bg-[#fff6f4]' : 'border-[#c8c8c8]'
-              }`}
-              onClick={() => fileRef.current?.click()}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-            >
-              <motion.span
-                className="grid h-16 w-20 place-items-center rounded-lg bg-[#fff0ed] text-[#ff5330]"
-                whileHover={{ y: -3 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+                )}
+                {result && !loading && (
+                  <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent p-6">
+                    <div>
+                      <p className="m-0 text-sm font-bold text-white/70">Risk Assessment</p>
+                      <p className="m-0 text-[28px] font-extrabold text-white">
+                        {result.final_tier} — {Math.round(result.final_score)}/100
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {!loading && (
+                  <div className="absolute right-4 top-4 flex flex-wrap justify-end gap-2">
+                    {isMobileUpload && (
+                      <motion.button
+                        type="button"
+                        className={`inline-flex min-h-10 items-center justify-center gap-2 border border-[#222] bg-[#fafafa] px-4 text-[#121212] shadow-sm ${type.button}`}
+                        onClick={openCameraPicker}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Camera size={15} />
+                        Camera
+                      </motion.button>
+                    )}
+                    <motion.button
+                      type="button"
+                      className={`inline-flex min-h-10 items-center justify-center gap-2 border border-[#222] bg-[#fafafa] px-4 text-[#121212] shadow-sm ${type.button}`}
+                      onClick={openGalleryPicker}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <ImageUp size={15} />
+                      {isMobileUpload ? 'Gallery' : 'Replace'}
+                    </motion.button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div
+                role={!isMobileUpload ? 'button' : undefined}
+                tabIndex={!isMobileUpload ? 0 : undefined}
+                className={`flex h-full min-h-[300px] w-full cursor-pointer flex-col items-center justify-center gap-3 border border-dashed bg-[#ececec] p-8 text-center transition-colors hover:border-[#ff5330] hover:bg-[#fff6f4] sm:min-h-[380px] md:min-h-[430px] lg:min-h-full ${dragActive ? 'border-[#ff5330] bg-[#fff6f4]' : 'border-[#c8c8c8]'
+                  }`}
+                onClick={!isMobileUpload ? openGalleryPicker : undefined}
+                onKeyDown={!isMobileUpload ? (e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    openGalleryPicker()
+                  }
+                } : undefined}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
               >
-                <ImageUp size={42} strokeWidth={2.2} />
-              </motion.span>
-              <p className={`m-0 text-[#333] ${type.label}`}>Attach a building photo</p>
-              <p className={`m-0 max-w-[280px] !text-center text-[#888] ${type.meta}`}>
-                The preview will blur during ML analysis while the severity score is calculated.
-              </p>
-            </button>
-          )}
-        </motion.div>
+                <motion.span
+                  className="grid h-16 w-20 place-items-center rounded-lg bg-[#fff0ed] text-[#ff5330]"
+                  whileHover={{ y: -3 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+                >
+                  <ImageUp size={42} strokeWidth={2.2} />
+                </motion.span>
+                <p className={`m-0 text-[#333] ${type.label}`}>Attach a building photo</p>
+                <p className={`m-0 max-w-[280px] !text-center text-[#888] ${type.meta}`}>
+                  The preview will blur during ML analysis while the severity score is calculated.
+                </p>
+                {isMobileUpload && (
+                  <div className="mt-2 flex flex-wrap justify-center gap-3">
+                    <motion.button className={darkBtn} type="button" onClick={openCameraPicker} whileTap={buttonTap}>
+                      <Camera size={15} />
+                      Camera
+                    </motion.button>
+                    <motion.button className={outlineBtn} type="button" onClick={openGalleryPicker} whileTap={{ scale: 0.98 }}>
+                      <ImageUp size={15} />
+                      Gallery
+                    </motion.button>
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.div>
         )}
       </motion.div>
     </section>
