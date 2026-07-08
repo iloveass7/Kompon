@@ -1160,6 +1160,7 @@ Built with 💪 for the earthquake safety of Bangladesh.
 | **Shuhrid Abrar** | Frontend Development, UI/UX Design |
 | **MD Tanjir Rahman** | Data Engineering, Research, Documentation |
 
+
 ---
 
 <p align="center">

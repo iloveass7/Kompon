@@ -33,6 +33,14 @@ const scenarioPointSchema = new mongoose.Schema(
     // Ground features (mirror of hazard_points for this event's grid)
     ground_susceptibility_score: { type: Number },
     vs30: { type: Number },
+    elevation_m: { type: Number },
+    slope_deg: { type: Number },
+    dist_water_m: { type: Number },
+    water_occurrence_pct: { type: Number },
+    geology_class: { type: String },
+    hand_m: { type: Number },
+    water_max_extent: { type: Number },
+    dynamic_label_name: { type: String },
   },
   {
     collection: "scenario_points",

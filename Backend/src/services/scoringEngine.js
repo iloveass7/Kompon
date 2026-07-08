@@ -99,6 +99,22 @@ const SEVERITY_TIER_BASE = {
   "Very High": 95,
 };
 
+function normalizeSeverityTier(value) {
+  const token = String(value ?? "").trim().toLowerCase().replace(/\s+/g, "_");
+  if (token === "very_low") return "Very Low";
+  if (token === "low") return "Low";
+  if (token === "moderate") return "Moderate";
+  if (token === "high") return "High";
+  if (token === "very_high") return "Very High";
+  return null;
+}
+
+function readCoveragePct(detection) {
+  const raw = Number(detection.coverage_pct ?? detection.coverage ?? 0);
+  if (!Number.isFinite(raw) || raw <= 0) return 0;
+  return raw <= 1 ? raw * 100 : raw;
+}
+
 /**
  * Derive a CrackEvidence score from Model A's crack_analysis output.
  *
@@ -106,11 +122,11 @@ const SEVERITY_TIER_BASE = {
  * @returns {number} score 0–100
  */
 export function deriveCrackEvidence(crackAnalysis) {
-  if (!crackAnalysis || !crackAnalysis.severity_tier) {
+  if (!normalizeSeverityTier(crackAnalysis?.severity_tier ?? crackAnalysis?.concern)) {
     return 0; // no crack data — will be excluded from weighting
   }
 
-  const baseTier = crackAnalysis.severity_tier;
+  const baseTier = normalizeSeverityTier(crackAnalysis?.severity_tier ?? crackAnalysis?.concern);
   let score = SEVERITY_TIER_BASE[baseTier] ?? 50;
 
   // Optional ±10 nudge by coverage_pct within tier
@@ -119,7 +135,7 @@ export function deriveCrackEvidence(crackAnalysis) {
     crackAnalysis.detections.length > 0
   ) {
     const maxCoverage = Math.max(
-      ...crackAnalysis.detections.map((d) => d.coverage_pct ?? 0)
+      ...crackAnalysis.detections.map((d) => readCoveragePct(d))
     );
     // Nudge: high coverage within tier pushes score up, low pushes down
     // coverage_pct is typically 0–100 as a percentage
@@ -138,9 +154,6 @@ const BASE_WEIGHTS = {
   siteHazard: 0.2,
   scenario: 0.15,
 };
-
-// Gate confidence uncertainty threshold
-const GATE_UNCERTAINTY_THRESHOLD = 0.5;
 
 /**
  * Combine component scores into a final risk score and tier.
@@ -194,17 +207,16 @@ export function combineScores({
   let finalTier = scoreToTier(finalScore);
 
   // ─── Escalation override (non-negotiable) ───
-  // If crack severity is "Very High" OR gate confidence is below threshold,
+  // If crack severity is High/Very High,
   // floor final_tier at "High" and recommend engineer referral.
   let escalationApplied = false;
   let engineerReferralRecommended = false;
 
-  const severityTier = crackAnalysis?.severity_tier;
-  const gateConfidence = gate?.confidence;
+  const severityTier = normalizeSeverityTier(crackAnalysis?.severity_tier ?? crackAnalysis?.concern);
 
   if (
-    severityTier === "Very High" ||
-    (gateConfidence !== undefined && gateConfidence < GATE_UNCERTAINTY_THRESHOLD)
+    severityTier === "High" ||
+    severityTier === "Very High"
   ) {
     escalationApplied = true;
     engineerReferralRecommended = true;

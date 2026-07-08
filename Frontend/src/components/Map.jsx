@@ -6,13 +6,16 @@ import { type } from '../lib/typography.js'
 import { BD_VIEWBOX, BD_DIVISIONS, BD_OUTLINE, BD_PROJECTION } from '../assets/bangladesh.js'
 
 const HEATMAP_DEFAULT_LAYER = 'static'
+const HEATMAP_CELL_DEG = 0.035
+const HEATMAP_LIMIT_PER_LAYER = 1200
+const STATIC_HEATMAP_FALLBACK_URL = `${import.meta.env.BASE_URL || '/'}hazard_heatmap_static.json`
 const MAP_MAX_WIDTH = 690
 const [, , BD_VIEWBOX_WIDTH, BD_VIEWBOX_HEIGHT] = BD_VIEWBOX.split(' ').map(Number)
 const QR_SCAN_BOX = {
-  x: 18,
-  y: 18,
-  width: BD_VIEWBOX_WIDTH - 36,
-  height: BD_VIEWBOX_HEIGHT - 36,
+  x: 0,
+  y: 0,
+  width: BD_VIEWBOX_WIDTH,
+  height: BD_VIEWBOX_HEIGHT,
 }
 const SCAN_DURATION_MS = 3800
 const SCAN_FADE_MS = 650
@@ -39,6 +42,57 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
 }
 
+function sampleSpatialPoints(points, limit) {
+  if (!Array.isArray(points) || points.length <= limit) return points || []
+
+  const ordered = [...points].sort((a, b) => {
+    if (a.lat !== b.lat) return a.lat - b.lat
+    return a.lon - b.lon
+  })
+  const step = ordered.length / limit
+
+  return Array.from({ length: limit }, (_, index) => ordered[Math.floor(index * step)])
+}
+
+function normalizeStaticHeatmapPayload(payload) {
+  const staticLayer = payload?.layers?.find((layer) => layer.id === HEATMAP_DEFAULT_LAYER)
+  if (!staticLayer?.points?.length) return null
+
+  return {
+    ...payload,
+    status: 'ok',
+    source: payload.source || 'frontend_static_cache',
+    cell_deg: HEATMAP_CELL_DEG,
+    limit_per_layer: HEATMAP_LIMIT_PER_LAYER,
+    layers: [
+      {
+        ...staticLayer,
+        points: sampleSpatialPoints(staticLayer.points, HEATMAP_LIMIT_PER_LAYER),
+      },
+    ],
+  }
+}
+
+async function loadStaticHeatmapFallback(signal) {
+  const response = await fetch(STATIC_HEATMAP_FALLBACK_URL, {
+    signal,
+    cache: 'force-cache',
+  })
+
+  if (!response.ok) {
+    throw new Error(`Static heatmap fallback failed with ${response.status}`)
+  }
+
+  const payload = await response.json()
+  const normalized = normalizeStaticHeatmapPayload(payload)
+
+  if (!normalized) {
+    throw new Error('Static heatmap fallback did not contain a usable layer')
+  }
+
+  return normalized
+}
+
 function heatColor(score) {
   if (score >= 82) return '#7f1d1d'
   if (score >= 65) return '#c2410c'
@@ -49,7 +103,12 @@ function heatColor(score) {
 
 function HeatmapLegend() {
   return (
-    <div className="pointer-events-none relative z-20 mb-4 w-full rounded-lg border border-[#d8d8d8] bg-white/95 px-4 py-3.5 shadow-[0_12px_32px_rgba(18,18,18,0.12)] backdrop-blur sm:absolute sm:left-auto sm:right-2 sm:top-[8%] sm:mb-0 sm:w-[250px] sm:px-3.5 sm:py-3 md:right-0 lg:right-[-2px] xl:right-[-5px]">
+    <motion.div
+      className="pointer-events-none relative z-20 mb-4 w-full rounded-lg border border-[#d8d8d8] bg-white/95 px-4 py-3.5 shadow-[0_12px_32px_rgba(18,18,18,0.12)] backdrop-blur sm:absolute sm:left-auto sm:right-2 sm:top-[8%] sm:mb-0 sm:w-[250px] sm:px-3.5 sm:py-3 md:right-0 lg:right-[-2px] xl:right-[-5px]"
+      initial={{ opacity: 0, y: -18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div className="mb-2.5 flex items-start justify-between gap-3">
         <div>
           <p className={`m-0 text-[#121212] ${type.label}`}>Ground response risk</p>
@@ -68,7 +127,7 @@ function HeatmapLegend() {
         <span>More stable</span>
         <span>More sensitive</span>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -137,35 +196,43 @@ function HeatmapTooltip({ point }) {
 
 function QrScanAnimation() {
   const moduleSize = QR_SCAN_BOX.width / 14
-  const cornerSize = 58
+  const cornerSize = 64
 
   return (
     <g pointerEvents="none">
+      <rect
+        x={QR_SCAN_BOX.x}
+        y={QR_SCAN_BOX.y}
+        width={QR_SCAN_BOX.width}
+        height={QR_SCAN_BOX.height}
+        fill="#fafafa"
+        fillOpacity="0.24"
+      />
       <path
         d={BD_OUTLINE}
         fill="#fafafa"
-        fillOpacity="0.62"
+        fillOpacity="0.5"
       />
-      <g clipPath="url(#bd-heatmap-clip)">
+      <g clipPath="url(#bd-scan-box-clip)">
         <rect
           x={QR_SCAN_BOX.x}
           y={QR_SCAN_BOX.y}
           width={QR_SCAN_BOX.width}
           height={QR_SCAN_BOX.height}
           fill="#ffffff"
-          fillOpacity="0.16"
+          fillOpacity="0.1"
         />
         {QR_MODULES.map(([col, row]) => (
           <motion.rect
             key={`${col}-${row}`}
-            x={QR_SCAN_BOX.x + col * moduleSize + 4}
-            y={QR_SCAN_BOX.y + row * moduleSize + 4}
-            width={moduleSize * 0.58}
-            height={moduleSize * 0.58}
+            x={QR_SCAN_BOX.x + col * moduleSize + moduleSize * 0.18}
+            y={QR_SCAN_BOX.y + row * moduleSize + moduleSize * 0.18}
+            width={moduleSize * 0.44}
+            height={moduleSize * 0.44}
             rx="3"
             fill="#ff5330"
             initial={{ opacity: 0.08 }}
-            animate={{ opacity: [0.06, 0.28, 0.1] }}
+            animate={{ opacity: [0.04, 0.18, 0.06] }}
             transition={{
               duration: 1.65,
               repeat: Infinity,
@@ -178,10 +245,10 @@ function QrScanAnimation() {
           x={QR_SCAN_BOX.x}
           y={QR_SCAN_BOX.y}
           width={QR_SCAN_BOX.width}
-          height="86"
+          height="92"
           fill="url(#bd-qr-scan-gradient)"
-          initial={{ y: -80 }}
-          animate={{ y: QR_SCAN_BOX.height + 80 }}
+          initial={{ y: -92 }}
+          animate={{ y: QR_SCAN_BOX.height + 92 }}
           transition={{ duration: SCAN_DURATION_SECONDS, ease: [0.45, 0, 0.2, 1] }}
         />
         <motion.line
@@ -262,11 +329,29 @@ function Map() {
     let retryTimer
 
     async function loadHeatmap() {
+      const applyHeatmapPayload = (payload) => {
+        const layers = payload?.layers || []
+        setHeatmapData(payload || null)
+
+        if (layers.length > 0) {
+          const hasDefault = layers.some((layer) => layer.id === HEATMAP_DEFAULT_LAYER)
+          setActiveLayerId(hasDefault ? HEATMAP_DEFAULT_LAYER : layers[0].id)
+          return true
+        }
+
+        return false
+      }
+
+      const applyFallback = async () => {
+        const fallbackPayload = await loadStaticHeatmapFallback(controller.signal)
+        return applyHeatmapPayload(fallbackPayload)
+      }
+
       try {
         const response = await api.get('/v1/hazard/heatmap', {
           params: {
-            cell_deg: 0.035,
-            limit_per_layer: 1200,
+            cell_deg: HEATMAP_CELL_DEG,
+            limit_per_layer: HEATMAP_LIMIT_PER_LAYER,
             include_scenarios: false,
           },
           signal: controller.signal,
@@ -274,6 +359,20 @@ function Map() {
         })
 
         const layers = response.data?.layers || []
+
+        if (layers.length > 0) {
+          applyHeatmapPayload(response.data)
+          return
+        }
+
+        try {
+          const fallbackApplied = await applyFallback()
+          if (fallbackApplied) return
+        } catch (fallbackErr) {
+          if (fallbackErr.name === 'AbortError') return
+          console.error('[Map] Static heatmap fallback failed:', fallbackErr)
+        }
+
         setHeatmapData(response.data || null)
 
         if (response.data?.status === 'building' && layers.length === 0) {
@@ -282,15 +381,17 @@ function Map() {
           }, 4500)
           return
         }
-
-        if (layers.length > 0) {
-          const hasDefault = layers.some((layer) => layer.id === HEATMAP_DEFAULT_LAYER)
-          setActiveLayerId(hasDefault ? HEATMAP_DEFAULT_LAYER : layers[0].id)
-        }
       } catch (err) {
         if (err.name === 'CanceledError' || err.name === 'AbortError') return
 
         console.error('[Map] Failed to load hazard heatmap:', err)
+
+        try {
+          await applyFallback()
+        } catch (fallbackErr) {
+          if (fallbackErr.name === 'AbortError') return
+          console.error('[Map] Static heatmap fallback failed:', fallbackErr)
+        }
       }
     }
 
@@ -331,7 +432,14 @@ function Map() {
   const showHeatmap = isExpanded && projectedHeatPoints.length > 0 && scanComplete
 
   useEffect(() => {
-    if (!isExpanded || projectedHeatPoints.length === 0) return undefined
+    let fadeTimer
+
+    if (!isExpanded) {
+      setScanComplete(false)
+      setScanVisible(false)
+      setHoveredHeatPoint(null)
+      return undefined
+    }
 
     setScanComplete(false)
     setScanVisible(true)
@@ -339,13 +447,16 @@ function Map() {
 
     const timer = window.setTimeout(() => {
       setScanComplete(true)
-      window.setTimeout(() => {
+      fadeTimer = window.setTimeout(() => {
         setScanVisible(false)
       }, SCAN_FADE_MS)
     }, SCAN_DURATION_MS)
 
-    return () => window.clearTimeout(timer)
-  }, [isExpanded, projectedHeatPoints.length, activeLayerId])
+    return () => {
+      window.clearTimeout(timer)
+      if (fadeTimer) window.clearTimeout(fadeTimer)
+    }
+  }, [isExpanded])
 
   const handleExpand = () => {
     setIsExpanded(true)
@@ -420,15 +531,7 @@ function Map() {
           layout
           transition={mapTransition}
         >
-          {showHeatmap && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: 0.2, ease: 'easeOut' }}
-            >
-              <HeatmapLegend />
-            </motion.div>
-          )}
+          {showHeatmap && <HeatmapLegend />}
 
           <svg
             className="h-auto w-full overflow-visible"
@@ -443,6 +546,15 @@ function Map() {
 
               <clipPath id="bd-heatmap-clip">
                 <path d={BD_OUTLINE} />
+              </clipPath>
+
+              <clipPath id="bd-scan-box-clip">
+                <rect
+                  x={QR_SCAN_BOX.x}
+                  y={QR_SCAN_BOX.y}
+                  width={QR_SCAN_BOX.width}
+                  height={QR_SCAN_BOX.height}
+                />
               </clipPath>
 
               <filter id="bd-heatmap-soften" x="-18%" y="-18%" width="136%" height="136%">
@@ -464,16 +576,6 @@ function Map() {
               fillOpacity={isExpanded && activeLayer ? '0.035' : '0.08'}
               pointerEvents="none"
             />
-
-            {scanVisible && (
-              <motion.g
-                initial={{ opacity: 0 }}
-                animate={{ opacity: scanComplete ? 0 : 1 }}
-                transition={{ duration: scanComplete ? 0.65 : 0.35, ease: 'easeOut' }}
-              >
-                <QrScanAnimation />
-              </motion.g>
-            )}
 
             {showHeatmap && (
               <motion.g
@@ -580,38 +682,64 @@ function Map() {
                     </>
                   )}
                   {!showPulse && (
-                    <circle
-                      cx={division.x}
-                      cy={division.y}
-                      r={markerRadius + 5}
-                      fill="#ffffff"
-                      fillOpacity="0.18"
-                      stroke="#ffffff"
-                      strokeOpacity="0.35"
-                      strokeWidth="1.4"
-                    >
-                      <animate
-                        attributeName="r"
-                        begin={pulseDelay}
-                        dur="2.6s"
-                        repeatCount="indefinite"
-                        values={`${markerRadius + 4};${markerRadius + 11};${markerRadius + 4}`}
-                      />
-                      <animate
-                        attributeName="fill-opacity"
-                        begin={pulseDelay}
-                        dur="2.6s"
-                        repeatCount="indefinite"
-                        values="0.2;0.04;0.2"
-                      />
-                      <animate
-                        attributeName="stroke-opacity"
-                        begin={pulseDelay}
-                        dur="2.6s"
-                        repeatCount="indefinite"
-                        values="0.4;0.08;0.4"
-                      />
-                    </circle>
+                    <>
+                      <circle
+                        cx={division.x}
+                        cy={division.y}
+                        r={markerRadius + 6}
+                        fill="#ffffff"
+                        fillOpacity="0.28"
+                        stroke="#ffffff"
+                        strokeOpacity="0.68"
+                        strokeWidth="1.8"
+                      >
+                        <animate
+                          attributeName="r"
+                          begin={pulseDelay}
+                          dur="2.6s"
+                          repeatCount="indefinite"
+                          values={`${markerRadius + 5};${markerRadius + 14};${markerRadius + 5}`}
+                        />
+                        <animate
+                          attributeName="fill-opacity"
+                          begin={pulseDelay}
+                          dur="2.6s"
+                          repeatCount="indefinite"
+                          values="0.3;0.07;0.3"
+                        />
+                        <animate
+                          attributeName="stroke-opacity"
+                          begin={pulseDelay}
+                          dur="2.6s"
+                          repeatCount="indefinite"
+                          values="0.72;0.14;0.72"
+                        />
+                      </circle>
+                      <circle
+                        cx={division.x}
+                        cy={division.y}
+                        r={markerRadius + 6}
+                        fill="none"
+                        stroke="#111111"
+                        strokeOpacity="0.5"
+                        strokeWidth="1"
+                      >
+                        <animate
+                          attributeName="r"
+                          begin={pulseDelay}
+                          dur="2.6s"
+                          repeatCount="indefinite"
+                          values={`${markerRadius + 5};${markerRadius + 14};${markerRadius + 5}`}
+                        />
+                        <animate
+                          attributeName="stroke-opacity"
+                          begin={pulseDelay}
+                          dur="2.6s"
+                          repeatCount="indefinite"
+                          values="0.52;0.12;0.52"
+                        />
+                      </circle>
+                    </>
                   )}
                   <circle
                     cx={division.x}
@@ -619,8 +747,8 @@ function Map() {
                     r={showPulse ? markerRadius : markerRadius + 1}
                     fill={showPulse ? '#ff5330' : '#ffffff'}
                     stroke={showPulse ? '#ff5330' : '#111111'}
-                    strokeOpacity={showPulse ? '1' : '0.65'}
-                    strokeWidth={showPulse ? '2' : '1.6'}
+                    strokeOpacity={showPulse ? '1' : '0.48'}
+                    strokeWidth={showPulse ? '2' : '1.15'}
                   />
                   {!showPulse && (
                     <circle
@@ -639,8 +767,8 @@ function Map() {
                     fill={showPulse ? '#121212' : '#ffffff'}
                     paintOrder="stroke"
                     stroke={showPulse ? '#fafafa' : '#111111'}
-                    strokeWidth={showPulse ? '4' : '2.8'}
-                    strokeOpacity={showPulse ? '1' : '0.78'}
+                    strokeWidth={showPulse ? '4' : '2.1'}
+                    strokeOpacity={showPulse ? '1' : '0.82'}
                     strokeLinejoin="round"
                     textAnchor={division.anchor || 'start'}
                   >
@@ -649,6 +777,16 @@ function Map() {
                 </g>
               )
             })}
+
+            {scanVisible && (
+              <motion.g
+                initial={{ opacity: 0 }}
+                animate={{ opacity: scanComplete ? 0 : 1 }}
+                transition={{ duration: scanComplete ? 0.65 : 0.35, ease: 'easeOut' }}
+              >
+                <QrScanAnimation />
+              </motion.g>
+            )}
           </svg>
 
           {showHeatmap && <HeatmapTooltip point={hoveredHeatPoint} />}

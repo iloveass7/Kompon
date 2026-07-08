@@ -1,0 +1,9 @@
+Frontend/node_modules
+Frontend/dist
+Backend/node_modules
+kompon-ml-space/__pycache__
+.git
+npm-debug.log
+.env
+.env.local
+*.log

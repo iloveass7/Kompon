@@ -20,6 +20,20 @@ function sanitizeText(text) {
   }).trim();
 }
 
+function sanitizeImageUrl(url) {
+  if (!url || typeof url !== "string") return null;
+
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.toLowerCase() === "none") return null;
+
+  try {
+    const parsed = new URL(trimmed);
+    return ["http:", "https:"].includes(parsed.protocol) ? parsed.href : null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Currents API (primary) ───
 async function fetchFromCurrents(query = "earthquake") {
   const apiKey = process.env.CURRENTS_API_KEY;
@@ -45,7 +59,7 @@ async function fetchFromCurrents(query = "earthquake") {
     return articles.map((a) => ({
       title: sanitizeText(a.title),
       summary: sanitizeText(a.description),
-      image_url: a.image && a.image !== "None" ? a.image : null,
+      image_url: sanitizeImageUrl(a.image),
       source_name: sanitizeText(a.author) || sanitizeText(a.id?.split("/")[2]) || "Unknown",
       source_url: a.url || null,
       published_at: a.published || null,
@@ -76,7 +90,7 @@ async function fetchFromGDELT(query = "earthquake") {
     return articles.map((a) => ({
       title: sanitizeText(a.title),
       summary: sanitizeText(a.seendate ? `Published: ${a.seendate}` : ""),
-      image_url: a.socialimage || null,
+      image_url: sanitizeImageUrl(a.socialimage),
       source_name: sanitizeText(a.domain) || "Unknown",
       source_url: a.url || null,
       published_at: a.seendate || null,
@@ -100,8 +114,9 @@ function filterEarthquakeArticles(articles) {
   if (!articles) return null;
   return articles.filter(
     (a) =>
-      EARTHQUAKE_TERMS.test(a.title || "") ||
-      EARTHQUAKE_TERMS.test(a.summary || "")
+      a.image_url &&
+      (EARTHQUAKE_TERMS.test(a.title || "") ||
+        EARTHQUAKE_TERMS.test(a.summary || ""))
   );
 }
 
@@ -148,7 +163,9 @@ export async function refreshNewsCache() {
  * @returns {Promise<{ articles: Array, page: number, total: number, page_size: number }>}
  */
 export async function getCachedNews(page = 1, country = null) {
-  const allArticles = (await getCache(NEWS_CACHE_KEY)) || [];
+  const allArticles = ((await getCache(NEWS_CACHE_KEY)) || []).filter(
+    (a) => sanitizeImageUrl(a?.image_url)
+  );
 
   // Optional country filter (loose substring match on title/source)
   let filtered = allArticles;
